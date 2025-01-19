@@ -1,7 +1,7 @@
 import os
 import json
 import subprocess
-from constants import dossier_encodage_manuel, dossier_sortie
+from constants import dossier_encodage_manuel, dossier_sortie, horodatage
 
 
 def obtenir_pistes_audio(filepath):
@@ -31,3 +31,18 @@ def verifier_dossiers():
         os.makedirs(dossier_sortie)
     if not os.path.exists(dossier_encodage_manuel):
         os.makedirs(dossier_encodage_manuel)
+
+
+def copier_fichier_dossier_encodage_manuel(filepath):
+    base_name = os.path.basename(filepath)
+    new_path = os.path.join(dossier_encodage_manuel, base_name)
+    if os.path.exists(new_path):
+        base, extension = os.path.splitext(base_name)
+        counter = 1
+        while os.path.exists(new_path):
+            new_path = os.path.join(dossier_encodage_manuel, f"{
+                                    base}_{counter}{extension}")
+            counter += 1
+    os.rename(filepath, new_path)
+    print(f"{horodatage()} 📁 Fichier déplacé pour encodage manuel: {
+          os.path.basename(new_path)}")

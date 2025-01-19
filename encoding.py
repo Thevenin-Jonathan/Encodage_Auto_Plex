@@ -1,6 +1,6 @@
 from tqdm import tqdm
 import threading
-from file_operations import obtenir_pistes_audio, verifier_dossiers
+from file_operations import obtenir_pistes_audio, verifier_dossiers, copier_fichier_dossier_encodage_manuel
 from audio_selection import selectionner_pistes_audio
 from subtitle_selection import selectionner_sous_titres
 from constants import dossier_encodage_manuel, dossier_sortie, criteres_nom_pistes, fichier_presets, horodatage
@@ -27,18 +27,14 @@ def lancer_encodage(dossier, fichier, preset):
     if info_pistes is None:
         print(
             f"{horodatage()} ❌ Erreur lors de l'obtention des informations des pistes audio.")
-        os.rename(input_path, os.path.join(
-            dossier_encodage_manuel, os.path.basename(input_path)))
-        print(f"{horodatage()} 📁 Fichier déplacé pour encodage manuel: {fichier}")
+        copier_fichier_dossier_encodage_manuel(input_path)
         return
 
     pistes_audio = selectionner_pistes_audio(
         info_pistes, preset, criteres_nom_pistes)
     if pistes_audio is None:
         print(f"{horodatage()} 🚫 Aucune piste audio valide trouvée pour l'encodage.")
-        os.rename(input_path, os.path.join(
-            dossier_encodage_manuel, os.path.basename(input_path)))
-        print(f"{horodatage()} 📁 Fichier déplacé pour encodage manuel: {fichier}")
+        copier_fichier_dossier_encodage_manuel(input_path)
         return
 
     sous_titres = selectionner_sous_titres(info_pistes, preset)
