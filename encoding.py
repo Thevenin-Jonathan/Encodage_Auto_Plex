@@ -41,10 +41,11 @@ def obtenir_pistes_audio(filepath):
     commande = ["HandBrakeCLI", "-i", filepath, "--scan", "--json"]
     result = subprocess.run(commande, capture_output=True, text=True)
     if result.returncode != 0:
-        print(f"Erreur lors de l'exécution de HandBrakeCLI: {result.stderr}")
+        print(
+            f"{horodatage()} ❌ **Erreur** lors de l'exécution de HandBrakeCLI: {result.stderr}")
         return None
     if not result.stdout.strip():  # Vérification supplémentaire
-        print("Erreur : la sortie de HandBrakeCLI est vide.")
+        print(f"{horodatage()} ❌ **Erreur** : la sortie de HandBrakeCLI est vide.")
         return None
     try:
         # Extraire uniquement la partie JSON correcte de la sortie
@@ -54,7 +55,7 @@ def obtenir_pistes_audio(filepath):
         json_str = result.stdout[json_start:json_end]
         info_pistes = json.loads(json_str)
     except json.JSONDecodeError as e:
-        print(f"Erreur de décodage JSON: {e}")
+        print(f"{horodatage()} ❌ **Erreur** de décodage JSON: {e}")
         return None
     return info_pistes
 
@@ -68,11 +69,14 @@ def selectionner_pistes_audio(info_pistes, preset):
         pistes_francaises = [piste for piste in info_pistes['TitleList']
                              [0]['AudioList'] if piste['LanguageCode'] == 'fre']
         if not pistes_francaises:
+            print(f"{horodatage()} ❌ **Aucune piste audio française disponible.**")
             return None  # Aucune piste française disponible
 
         pistes_audio_finales = [piste for piste in pistes_francaises if not any(
             critere in piste['Description'] for critere in criteres_nom_pistes)]
         if len(pistes_audio_finales) != 1:
+            print(f"{horodatage(
+            )} ❌ **Il y a soit aucune piste valide, soit plusieurs pistes valides.**")
             return None  # Soit aucune piste valide, soit plusieurs pistes valides
 
         pistes_audio_selectionnees = [pistes_audio_finales[0]['TrackNumber']]
@@ -99,7 +103,8 @@ def lancer_encodage(dossier, fichier, preset):
     input_path = os.path.join(dossier, fichier)
     # Vérifier si le fichier a déjà été encodé pour éviter les encodages en boucle
     if "_encoded" in fichier:
-        print(f"DEBUG: Le fichier {fichier} a déjà été encodé, il est ignoré.")
+        print(
+            f"{horodatage()} ℹ️ **Le fichier {fichier} a déjà été encodé, il est ignoré.**")
         return
 
     output_path = os.path.join(dossier_sortie, os.path.splitext(fichier)[
@@ -107,16 +112,18 @@ def lancer_encodage(dossier, fichier, preset):
 
     info_pistes = obtenir_pistes_audio(input_path)
     if info_pistes is None:
+        print(
+            f"{horodatage()} ❌ **Erreur lors de l'obtention des informations des pistes audio.**")
         os.rename(input_path, os.path.join(
             dossier_encodage_manuel, os.path.basename(input_path)))
-        print(f"{horodatage()} 📁 Fichier déplacé pour encodage manuel: {fichier}")
+        print(f"{horodatage()} 📁 **Fichier déplacé pour encodage manuel: {fichier}**")
         return
 
     pistes_audio = selectionner_pistes_audio(info_pistes, preset)
     if pistes_audio is None:
+        print(f"{horodatage()} 📁 **Fichier déplacé pour encodage manuel: {fichier}**")
         os.rename(input_path, os.path.join(
             dossier_encodage_manuel, os.path.basename(input_path)))
-        print(f"{horodatage()} 📁 Fichier déplacé pour encodage manuel: {fichier}")
         return
 
     options_audio = ','.join([f'--audio={piste}' for piste in pistes_audio])
@@ -129,8 +136,8 @@ def lancer_encodage(dossier, fichier, preset):
         "--preset", preset,
     ] + options_audio.split(',')
     with console_lock:
-        print(f"{horodatage()} 🚀 Lancement de l'encodage pour {
-              fichier} avec le preset {preset} et pistes audio {pistes_audio}")
+        print(f"{horodatage()} 🚀 **Lancement de l'encodage pour {
+              fichier} avec le preset {preset} et pistes audio {pistes_audio}**")
     try:
         process = subprocess.Popen(
             commande, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
@@ -155,16 +162,16 @@ def lancer_encodage(dossier, fichier, preset):
         process.wait()
         with console_lock:
             if process.returncode == 0:
-                print(f"\n{horodatage()} ✅ Encodage terminé pour {
-                      fichier} avec le preset {preset} et pistes audio {pistes_audio}")
+                print(f"\n{horodatage()} ✅ **Encodage terminé pour {
+                      fichier} avec le preset {preset} et pistes audio {pistes_audio}**")
             else:
                 print(
-                    f"\n{horodatage()} ❌ Erreur lors de l'encodage de {fichier}")
+                    f"\n{horodatage()} ❌ **Erreur lors de l'encodage de {fichier}**")
     except subprocess.CalledProcessError as e:
         with console_lock:
-            print(f"\n{horodatage()} ❌ Erreur lors de l'encodage de {
-                  fichier}: {e}")
-            print(f"\n{horodatage()} ⚠️ Erreur de la commande : {e.stderr}")
+            print(
+                f"\n{horodatage()} ❌ **Erreur lors de l'encodage de {fichier}: {e}**")
+            print(f"\n{horodatage()} ⚠️ **Erreur de la commande : {e.stderr}**")
 
 # Fonction pour traiter la file d'attente d'encodage
 
@@ -176,14 +183,14 @@ def traitement_file_encodage(file_encodage):
             pbar_queue.refresh()
             dossier, fichier, preset = file_encodage.get()
             with console_lock:
-                print(f"\n{horodatage()} 🔄 Traitement du fichier en cours: {
-                      fichier} dans le dossier {dossier}")
+                print(f"\n{horodatage(
+                )} 🔄 **Traitement du fichier en cours: {fichier} dans le dossier {dossier}**")
             lancer_encodage(dossier, fichier, preset)
             file_encodage.task_done()
             pbar_queue.total = file_encodage.qsize()
             pbar_queue.refresh()
             with console_lock:
-                print(f"\n{horodatage()} Files en attente: {
-                      file_encodage.qsize()}")
-                print(f"\n{horodatage()} 🏁 Fichier traité et encodé: {
-                      fichier} dans le dossier {dossier}")
+                print(
+                    f"\n{horodatage()} **Files en attente: {file_encodage.qsize()}**")
+                print(f"\n{horodatage(
+                )} 🏁 **Fichier traité et encodé: {fichier} dans le dossier {dossier}**")
