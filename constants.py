@@ -8,7 +8,8 @@ dossier_sortie = "D:/Ripped"
 fichier_presets = 'custom_presets.json'
 
 # Critères pour filtrer les pistes françaises indésirables
-criteres_nom_pistes = ["VFQ", "CA", "AD", "audiodescription"]
+criteres_nom_pistes = ["VFQ", "CA", "AD", "audiodescription",
+                       "Quebec", "Canad", "NAD", "Narration", "Descriptive Audio", "FR-AD"]
 
 # Dossiers pour encodage manuel
 dossier_encodage_manuel = "D:/Torrents/Encodage_manuel"
