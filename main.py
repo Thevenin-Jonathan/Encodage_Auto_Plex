@@ -16,12 +16,9 @@ dossiers_presets = {
 # File d'attente pour les encodages
 file_encodage = Queue()
 
-# Critères pour sélectionner les pistes audio (par exemple, langue "fre" pour français)
-criteres_audio = ['fre']
-
 # Démarrer le thread de traitement de la file d'attente d'encodage
-thread_encodage = Thread(target=traitement_file_encodage,
-                         args=(file_encodage,), daemon=True)
+thread_encodage = Thread(target=traitement_file_encodage, args=(
+    file_encodage,), daemon=True)
 thread_encodage.start()
 
 # Surveiller les dossiers spécifiés
