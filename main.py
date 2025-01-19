@@ -1,6 +1,5 @@
 from queue import Queue
 from threading import Thread
-import time
 from surveillance import surveille_dossiers
 from encoding import traitement_file_encodage
 
