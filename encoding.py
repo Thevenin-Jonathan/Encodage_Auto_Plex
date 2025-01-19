@@ -2,6 +2,7 @@ from tqdm import tqdm
 import threading
 from file_operations import obtenir_pistes_audio, verifier_dossiers
 from audio_selection import selectionner_pistes_audio
+from subtitle_selection import selectionner_sous_titres
 from constants import dossier_encodage_manuel, dossier_sortie, criteres_nom_pistes, fichier_presets, horodatage
 import os
 import subprocess
@@ -40,7 +41,10 @@ def lancer_encodage(dossier, fichier, preset):
         print(f"{horodatage()} 📁 Fichier déplacé pour encodage manuel: {fichier}")
         return
 
+    sous_titres = selectionner_sous_titres(info_pistes, preset)
     options_audio = ','.join([f'--audio={piste}' for piste in pistes_audio])
+    options_sous_titres = ','.join(
+        [f'--subtitle={sous_titre}' for sous_titre in sous_titres])
 
     commande = [
         "HandBrakeCLI",
@@ -48,10 +52,10 @@ def lancer_encodage(dossier, fichier, preset):
         "-i", input_path,
         "-o", output_path,
         "--preset", preset,
-    ] + options_audio.split(',')
+    ] + options_audio.split(',') + options_sous_titres.split(',')
     with console_lock:
-        print(f"{horodatage()} 🚀 Lancement de l'encodage pour {
-              fichier} avec le preset {preset} et pistes audio {pistes_audio}")
+        print(f"{horodatage()} 🚀 Lancement de l'encodage pour {fichier} avec le preset {
+              preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres}")
     try:
         process = subprocess.Popen(
             commande, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
@@ -76,8 +80,8 @@ def lancer_encodage(dossier, fichier, preset):
         process.wait()
         with console_lock:
             if process.returncode == 0:
-                print(f"\n{horodatage()} ✅ Encodage terminé pour {
-                      fichier} avec le preset {preset} et pistes audio {pistes_audio}")
+                print(f"\n{horodatage()} ✅ Encodage terminé pour {fichier} avec le preset {
+                      preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres}")
             else:
                 print(
                     f"\n{horodatage()} ❌ Erreur lors de l'encodage de {fichier}")
