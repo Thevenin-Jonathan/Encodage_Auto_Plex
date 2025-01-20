@@ -5,27 +5,42 @@ from constants import horodatage, criteres_sous_titres_burn, criteres_sous_titre
 
 def selectionner_sous_titres(info_pistes, preset):
     sous_titres_selectionnes = []  # Liste des sous-titres à inclure dans la vidéo
-    # Liste des sous-titres à incruster (burn) dans la vidéo
-    sous_titres_burn = None
+    sous_titres_burn = None  # Sous-titre à incruster (burn)
+
+    def add_sous_titre(sous_titre):
+        nonlocal sous_titres_selectionnes, sous_titres_burn
+        if sous_titres_burn is None and any(critere in sous_titre['Name'].lower() for critere in criteres_sous_titres_burn):
+            sous_titres_burn = sous_titre['TrackNumber']
+        sous_titres_selectionnes.append(sous_titre['TrackNumber'])
 
     # Traitement pour les presets spécifiés
     if preset in ["Dessins animes FR 1000kbps", "1080p HD-Light 1500kbps", "Mangas MULTI 1000kbps"]:
-        # Todo
-        return
+        for sous_titre in info_pistes['TitleList'][0]['SubtitleList']:
+            # Garder uniquement les sous-titres en français
+            if sous_titre['LanguageCode'] == 'fra':
+                if sous_titre['Name'] == "" or not any(critere in sous_titre['Name'].lower() for critere in criteres_sous_titres_supprimer):
+                    add_sous_titre(sous_titre)
+        print(f"SS : {sous_titres_selectionnes}")
+        print(f"SS Burned : {sous_titres_burn}")
+
+        # Vérification des conditions d'erreur
+        if (sous_titres_burn is None and len(sous_titres_selectionnes) > 1) or (sous_titres_burn is not None and len(sous_titres_selectionnes) > 2):
+            print(f"{horodatage()} 🚫 Trop de sous-titres à inclure.")
+            return None, None
+
+        return sous_titres_selectionnes, sous_titres_burn
 
     # Traitement spécifique pour le preset "Manga_VO"
     elif preset == "Mangas VO 1000kbps":
         for sous_titre in info_pistes['TitleList'][0]['SubtitleList']:
             # Garder uniquement les sous-titres en français
             if sous_titre['LanguageCode'] == 'fra':
-                # S'il n'y a pas déjà un sous titre incrusté
                 if sous_titres_burn is None:
                     sous_titres_burn = sous_titre['TrackNumber']
                     sous_titres_selectionnes.append(sous_titre['TrackNumber'])
                 else:
                     # Trop de sous-titres à incruster, retourner une erreur
-                    print(
-                        f"{horodatage()} 🚫 Trop de sous-titres à incruster.")
+                    print(f"{horodatage()} 🚫 Trop de sous-titres à incruster.")
                     return None, None
 
         # Si un sous-titre français est présent, l'incruster
