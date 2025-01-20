@@ -14,7 +14,7 @@ def selectionner_pistes_audio(info_pistes, preset):
             return None  # Aucune piste française disponible
 
         pistes_audio_finales = [piste for piste in pistes_francaises if not any(
-            critere in piste['Description'] for critere in criteres_audios)]
+            critere in piste['Name'].lower() for critere in criteres_audios)]
         if len(pistes_audio_finales) != 1:
             print(
                 f"{horodatage()} 🚫 Il y a soit aucune piste valide, soit plusieurs pistes valides.")
@@ -51,6 +51,7 @@ def selectionner_pistes_audio(info_pistes, preset):
             return None
 
     elif preset == "Mangas VO 1000kbps":
+        # Sélectionner toutes les pistes audio
         pistes_audio_selectionnees = [piste['TrackNumber']
                                       for piste in info_pistes['TitleList'][0]['AudioList']]
 
