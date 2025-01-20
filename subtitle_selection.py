@@ -22,8 +22,6 @@ def selectionner_sous_titres(info_pistes, preset):
                 name_normalisee = enlever_accents(sous_titre['Name'])
                 if sous_titre['Name'] == "" or not any(critere in name_normalisee for critere in criteres_sous_titres_supprimer):
                     add_sous_titre(sous_titre)
-        print(f"SS : {sous_titres_selectionnes}")
-        print(f"SS Burned : {sous_titres_burn}")
 
         # Vérification des conditions d'erreur
         if (sous_titres_burn is None and len(sous_titres_selectionnes) > 1) or (sous_titres_burn is not None and len(sous_titres_selectionnes) > 2):
