@@ -27,6 +27,9 @@ criteres_sous_titres_supprimer = ["SDH", "malentendant"]
 # Dossiers pour encodage manuel
 dossier_encodage_manuel = "D:/Torrents/Encodage_manuel"
 
+# Taille maximal des messages de notifications windows
+maxsize_message = 70
+
 # Obtenir l'horodatage actuel
 
 
