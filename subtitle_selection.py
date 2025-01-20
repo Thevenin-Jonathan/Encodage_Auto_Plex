@@ -16,17 +16,17 @@ def selectionner_sous_titres(info_pistes, preset):
     # Traitement spécifique pour le preset "Manga_VO"
     elif preset == "Mangas VO 1000kbps":
         for sous_titre in info_pistes['TitleList'][0]['SubtitleList']:
-            # S'il n'y a pas déjà un sous titre incrusté
-            if sous_titres_burn is None:
-                # Garder uniquement les sous-titres en français
-                if sous_titre['LanguageCode'] == 'fra':
+            # Garder uniquement les sous-titres en français
+            if sous_titre['LanguageCode'] == 'fra':
+                # S'il n'y a pas déjà un sous titre incrusté
+                if sous_titres_burn is None:
                     sous_titres_burn = sous_titre['TrackNumber']
                     sous_titres_selectionnes.append(sous_titre['TrackNumber'])
-            else:
-                # Trop de sous-titres à incruster, retourner une erreur
-                print(
-                    f"{horodatage()} 🚫 Trop de sous-titres à incruster.")
-                return None, None
+                else:
+                    # Trop de sous-titres à incruster, retourner une erreur
+                    print(
+                        f"{horodatage()} 🚫 Trop de sous-titres à incruster.")
+                    return None, None
 
         # Si un sous-titre français est présent, l'incruster
         if sous_titres_burn is not None:
