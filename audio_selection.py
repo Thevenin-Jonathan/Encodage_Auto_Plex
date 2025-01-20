@@ -23,13 +23,32 @@ def selectionner_pistes_audio(info_pistes, preset):
         pistes_audio_selectionnees = [pistes_audio_finales[0]['TrackNumber']]
 
     elif preset == "Mangas MULTI 1000kbps":
+
+        # Sélectionner les numéros de piste audio depuis la première entrée de la liste des titres
         pistes_audio_selectionnees = [piste['TrackNumber']
                                       for piste in info_pistes['TitleList'][0]['AudioList']]
+
+        # Vérifier si la liste contient au moins deux entrées
+        if len(pistes_audio_selectionnees) < 2:
+            # Afficher un message d'erreur si la liste des pistes audio contient moins de deux entrées
+            print(f"{horodatage(
+            )} 🚫 La liste des pistes audio sélectionnées contient moins de deux entrées.")
+            return None
+
+        # Vérifier s'il existe au moins une piste audio en français
         if any(piste['LanguageCode'] == 'fra' for piste in info_pistes['TitleList'][0]['AudioList']):
+            # Trouver le numéro de la première piste audio en français
             piste_francaise_index = next(
                 piste['TrackNumber'] for piste in info_pistes['TitleList'][0]['AudioList'] if piste['LanguageCode'] == 'fra')
+
+            # Déplacer la piste audio française en première position dans la liste
             pistes_audio_selectionnees.insert(0, pistes_audio_selectionnees.pop(
                 pistes_audio_selectionnees.index(piste_francaise_index)))
+        else:
+            # Afficher un message d'erreur si aucune piste audio française n'est disponible
+            print(f"{horodatage(
+            )} 🚫 Aucune piste audio française disponible.")
+            return None
 
     elif preset == "Mangas VO 1000kbps":
         pistes_audio_selectionnees = [piste['TrackNumber']
