@@ -37,14 +37,12 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
 
     pistes_audio = selectionner_pistes_audio(info_pistes, preset)
     if pistes_audio is None:
-        print(f"{horodatage()} 🚫 Aucune piste audio valide trouvée pour l'encodage.")
         copier_fichier_dossier_encodage_manuel(input_path)
         return
 
     sous_titres, sous_titres_burn = selectionner_sous_titres(
         info_pistes, preset)
     if sous_titres is None:
-        print(f"{horodatage()} 🚫 Problème avec les sous-titres après filtrage.")
         copier_fichier_dossier_encodage_manuel(input_path)
         return
 
