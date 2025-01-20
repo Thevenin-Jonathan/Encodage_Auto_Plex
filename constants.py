@@ -18,8 +18,8 @@ dossier_sortie = "D:/Ripped"
 fichier_presets = 'custom_presets.json'
 
 # Critères pour filtrer les pistes françaises indésirables
-criteres_audios = ["vfq", "ca", "ad", "audiodescription",
-                   "quebec", "canad", "nad", "descriptive audio", "fr-ad"]
+criteres_audios = ["vfq", "ad", "audiodescription",
+                   "quebec", "nad", "descriptive audio", "fr-ad"]
 
 # Critères pour les sous-titres
 criteres_sous_titres_burn = ["force"]
