@@ -4,7 +4,7 @@ import subprocess
 from constants import dossier_encodage_manuel, dossier_sortie, horodatage
 
 
-def obtenir_pistes_audio(filepath):
+def obtenir_pistes(filepath):
     commande = ["HandBrakeCLI", "-i", filepath, "--scan", "--json"]
     result = subprocess.run(commande, capture_output=True, text=True)
     if result.returncode != 0:
@@ -31,6 +31,8 @@ def verifier_dossiers():
         os.makedirs(dossier_sortie)
     if not os.path.exists(dossier_encodage_manuel):
         os.makedirs(dossier_encodage_manuel)
+
+# Fonction pour copier un fichier dans le dossier d'encodage manuel en évitant les conflits de noms
 
 
 def copier_fichier_dossier_encodage_manuel(filepath):

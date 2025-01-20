@@ -1,9 +1,9 @@
 from tqdm import tqdm
 import threading
-from file_operations import obtenir_pistes_audio, verifier_dossiers, copier_fichier_dossier_encodage_manuel
+from file_operations import obtenir_pistes, verifier_dossiers, copier_fichier_dossier_encodage_manuel
 from audio_selection import selectionner_pistes_audio
 from subtitle_selection import selectionner_sous_titres
-from constants import dossier_encodage_manuel, dossier_sortie, criteres_nom_pistes, fichier_presets, horodatage
+from constants import dossier_sortie, fichier_presets, horodatage
 import os
 import subprocess
 import re
@@ -23,15 +23,14 @@ def lancer_encodage(dossier, fichier, preset):
     output_path = os.path.join(dossier_sortie, os.path.splitext(fichier)[
                                0] + "_encoded.mkv")  # Modifier l'extension de sortie en .mkv et le chemin
 
-    info_pistes = obtenir_pistes_audio(input_path)
+    info_pistes = obtenir_pistes(input_path)
     if info_pistes is None:
         print(
             f"{horodatage()} ❌ Erreur lors de l'obtention des informations des pistes audio.")
         copier_fichier_dossier_encodage_manuel(input_path)
         return
 
-    pistes_audio = selectionner_pistes_audio(
-        info_pistes, preset, criteres_nom_pistes)
+    pistes_audio = selectionner_pistes_audio(info_pistes, preset)
     if pistes_audio is None:
         print(f"{horodatage()} 🚫 Aucune piste audio valide trouvée pour l'encodage.")
         copier_fichier_dossier_encodage_manuel(input_path)
