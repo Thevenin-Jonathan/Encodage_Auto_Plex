@@ -11,6 +11,10 @@ fichier_presets = 'custom_presets.json'
 criteres_audios = ["VFQ", "CA", "AD", "audiodescription",
                    "Quebec", "Canad", "NAD", "Narration", "Descriptive Audio", "FR-AD"]
 
+# Critères pour les sous-titres
+criteres_sous_titres_burn = ["forced", "forces", "forcés", "forcé"]
+criteres_sous_titres_supprimer = ["SDH", "malentendant"]
+
 # Dossiers pour encodage manuel
 dossier_encodage_manuel = "D:/Torrents/Encodage_manuel"
 

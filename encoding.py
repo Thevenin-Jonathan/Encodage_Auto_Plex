@@ -36,10 +36,18 @@ def lancer_encodage(dossier, fichier, preset):
         copier_fichier_dossier_encodage_manuel(input_path)
         return
 
-    sous_titres = selectionner_sous_titres(info_pistes, preset)
-    options_audio = ','.join([f'--audio={piste}' for piste in pistes_audio])
-    options_sous_titres = ','.join(
-        [f'--subtitle={sous_titre}' for sous_titre in sous_titres])
+    sous_titres, sous_titres_burn = selectionner_sous_titres(
+        info_pistes, preset)
+    if sous_titres is None:
+        print(f"{horodatage(
+        )} 🚫 Problème avec les sous-titres après filtrage.")
+        copier_fichier_dossier_encodage_manuel(input_path)
+        return
+
+    options_audio = f'--audio={",".join(map(str, pistes_audio))}'
+    options_sous_titres = f'--subtitle={",".join(map(str, sous_titres))}'
+    options_burn = f"--subtitle-burned={sous_titres.index(
+        sous_titres_burn) + 1}" if sous_titres_burn is not None else ""
 
     commande = [
         "HandBrakeCLI",
@@ -47,10 +55,11 @@ def lancer_encodage(dossier, fichier, preset):
         "-i", input_path,
         "-o", output_path,
         "--preset", preset,
-    ] + options_audio.split(',') + options_sous_titres.split(',')
+    ] + [options_audio] + [options_sous_titres] + [options_burn]
+    print(commande)
     with console_lock:
         print(f"{horodatage()} 🚀 Lancement de l'encodage pour {fichier} avec le preset {
-              preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres}")
+              preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres} - burn {sous_titres_burn}")
     try:
         process = subprocess.Popen(
             commande, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
