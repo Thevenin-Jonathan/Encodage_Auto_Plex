@@ -2,15 +2,7 @@ from queue import Queue
 from threading import Thread
 from surveillance import surveille_dossiers
 from encoding import traitement_file_encodage
-
-# Dossiers à surveiller et leurs presets HandBrake
-dossiers_presets = {
-    "D:/Torrents/Dessins_animes": "Dessins animes FR 1000kbps",
-    "D:/Torrents/Films": "1080p HD-Light 1500kbps",
-    "D:/Torrents/Manga": "Mangas MULTI 1000kbps",
-    "D:/Torrents/Manga_VO": "Mangas VO 1000kbps",
-    "D:/Torrents/Series": "1080p HD-Light 1500kbps"
-}
+from constants import dossiers_presets
 
 # File d'attente pour les encodages
 file_encodage = Queue()

@@ -1,6 +1,15 @@
 import os
 from datetime import datetime
 
+# Dossiers à surveiller et leurs presets HandBrake
+dossiers_presets = {
+    "D:/Torrents/Dessins_animes": "Dessins animes FR 1000kbps",
+    "D:/Torrents/Films": "1080p HD-Light 1500kbps",
+    "D:/Torrents/Manga": "Mangas MULTI 1000kbps",
+    "D:/Torrents/Manga_VO": "Mangas VO 1000kbps",
+    "D:/Torrents/Series": "1080p HD-Light 1500kbps"
+}
+
 # Chemin du dossier de sortie pour les fichiers encodés
 dossier_sortie = "D:/Ripped"
 
