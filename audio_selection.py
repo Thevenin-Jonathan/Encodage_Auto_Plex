@@ -1,4 +1,4 @@
-from constants import horodatage, criteres_audios
+from constants import horodatage, criteres_audios, enlever_accents
 
 # Fonction pour sélectionner les pistes audios en fonction du preset
 
@@ -14,7 +14,7 @@ def selectionner_pistes_audio(info_pistes, preset):
             return None  # Aucune piste française disponible
 
         pistes_audio_finales = [piste for piste in pistes_francaises if not any(
-            critere in piste['Name'].lower() for critere in criteres_audios)]
+            critere in enlever_accents(piste['Name']) for critere in criteres_audios)]
         if len(pistes_audio_finales) != 1:
             print(
                 f"{horodatage()} 🚫 Il y a soit aucune piste valide, soit plusieurs pistes valides.")

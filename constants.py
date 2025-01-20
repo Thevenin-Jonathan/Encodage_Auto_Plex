@@ -1,4 +1,5 @@
 import os
+import unicodedata
 from datetime import datetime
 
 # Dossiers à surveiller et leurs presets HandBrake
@@ -21,7 +22,7 @@ criteres_audios = ["vfq", "ca", "ad", "audiodescription",
                    "quebec", "canad", "nad", "descriptive audio", "fr-ad"]
 
 # Critères pour les sous-titres
-criteres_sous_titres_burn = ["forced", "forces", "forcés", "forcé"]
+criteres_sous_titres_burn = ["force"]
 criteres_sous_titres_supprimer = ["sdh", "malentendant"]
 
 # Dossiers pour encodage manuel
@@ -35,3 +36,10 @@ maxsize_message = 70
 
 def horodatage():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+# Fonction pour enlever les accents d'une chaîne de caractères et convertir en minuscules
+
+
+def enlever_accents(input_str):
+    nfkd_form = unicodedata.normalize('NFKD', input_str.lower())
+    return "".join([c for c in nfkd_form if not unicodedata.combining(c)])

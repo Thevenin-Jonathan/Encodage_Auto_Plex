@@ -1,4 +1,4 @@
-from constants import horodatage, criteres_sous_titres_burn, criteres_sous_titres_supprimer
+from constants import horodatage, criteres_sous_titres_burn, criteres_sous_titres_supprimer, enlever_accents
 
 # Fonction pour sélectionner les sous-titres en fonction du preset
 
@@ -9,7 +9,8 @@ def selectionner_sous_titres(info_pistes, preset):
 
     def add_sous_titre(sous_titre):
         nonlocal sous_titres_selectionnes, sous_titres_burn
-        if sous_titres_burn is None and any(critere in sous_titre['Name'].lower() for critere in criteres_sous_titres_burn):
+        name_normalisee = enlever_accents(sous_titre['Name'])
+        if sous_titres_burn is None and any(critere in name_normalisee for critere in criteres_sous_titres_burn):
             sous_titres_burn = sous_titre['TrackNumber']
         sous_titres_selectionnes.append(sous_titre['TrackNumber'])
 
@@ -18,7 +19,8 @@ def selectionner_sous_titres(info_pistes, preset):
         for sous_titre in info_pistes['TitleList'][0]['SubtitleList']:
             # Garder uniquement les sous-titres en français
             if sous_titre['LanguageCode'] == 'fra':
-                if sous_titre['Name'] == "" or not any(critere in sous_titre['Name'].lower() for critere in criteres_sous_titres_supprimer):
+                name_normalisee = enlever_accents(sous_titre['Name'])
+                if sous_titre['Name'] == "" or not any(critere in name_normalisee for critere in criteres_sous_titres_supprimer):
                     add_sous_titre(sous_titre)
         print(f"SS : {sous_titres_selectionnes}")
         print(f"SS Burned : {sous_titres_burn}")
