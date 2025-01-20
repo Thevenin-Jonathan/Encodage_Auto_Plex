@@ -58,7 +58,7 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         "-o", output_path,
         "--preset", preset,
     ] + [options_audio] + [options_sous_titres] + [options_burn]
-    print(commande)
+    print(f"{horodatage()} 🔧 Commande d'encodage : {' '.join(commande)}")
 
     with console_lock:
         print(f"{horodatage()} 🚀 Lancement de l'encodage pour {fichier} avec le preset {
