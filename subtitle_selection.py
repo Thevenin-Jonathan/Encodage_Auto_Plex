@@ -23,12 +23,13 @@ def selectionner_sous_titres(info_pistes, preset):
                     sous_titres_burn = sous_titre['TrackNumber']
                     sous_titres_selectionnes.append(sous_titre['TrackNumber'])
             else:
+                # Trop de sous-titres à incruster, retourner une erreur
                 print(
                     f"{horodatage()} 🚫 Trop de sous-titres à incruster.")
                 return None, None
 
         # Si un sous-titre français est présent, l'incruster
-        if not sous_titres_burn is None:
+        if sous_titres_burn is not None:
             return sous_titres_selectionnes, sous_titres_burn
         else:
             print(
