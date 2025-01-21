@@ -56,8 +56,7 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
     options_aname = f'--aname={aname_values}'
 
     # Calculer le nombre de sous-titres à inclure dans --subname
-    if sous_titres_burn is not None:
-        num_sous_titres = len(sous_titres) - 1
+    if sous_titres_burn is not None: num_sous_titres = len(sous_titres) - 1
     else:
         num_sous_titres = len(sous_titres)
 
