@@ -74,6 +74,9 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         options_audio,
         options_sous_titres,
         options_burn,
+        "--aencoder=aac",
+        "--ab=192",
+        "--mixdown=5point1",
     ]
 
     print(f"{horodatage()} 🔧 Commande d'encodage : {' '.join(commande)}")
