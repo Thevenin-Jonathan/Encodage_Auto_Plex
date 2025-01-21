@@ -11,16 +11,13 @@ fichier_encodes = "fichiers_encodes.json"
 # Extensions de fichiers à surveiller
 extensions = [".mkv", ".mp4", ".avi"]
 
+
 # Obtenir l'horodatage actuel
-
-
 def horodatage():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 # Obtenir la liste initiale des fichiers dans un dossier
-
-
 def obtenir_fichiers(dossier):
     try:
         return {
@@ -34,8 +31,6 @@ def obtenir_fichiers(dossier):
 
 
 # Fonction pour surveiller les dossiers
-
-
 def surveille_dossiers(dossiers_presets, file_encodage):
     fichiers_detectes = charger_fichiers(fichier_sauvegarde)
     fichiers_encodes = charger_fichiers(fichier_encodes)
@@ -53,13 +48,13 @@ def surveille_dossiers(dossiers_presets, file_encodage):
 
             if nouveaux_fichiers:
                 for fichier in nouveaux_fichiers:
-                    if fichier.endswith("_encoded.mkv"):
+                    # Vérifier si le fichier se termine par l'une des extensions encodées
+                    if any(fichier.endswith(f"_encoded{ext}") for ext in extensions):
                         # Ignorer les fichiers déjà encodés
                         continue
                     if debug_mode:
                         print(
-                            f"{horodatage()} 🆕 Nouveau fichier détecté dans {
-                            dossier}: {fichier}"
+                            f"{horodatage()} 🆕 Nouveau fichier détecté dans {dossier}: {fichier}"
                         )
                     if dossier not in fichiers_detectes:
                         fichiers_detectes[dossier] = []
@@ -79,8 +74,7 @@ def surveille_dossiers(dossiers_presets, file_encodage):
                 for fichier in fichiers_supprimes:
                     if debug_mode:
                         print(
-                            f"{horodatage()} 🗑️ Fichier supprimé dans {
-                            dossier}: {fichier}"
+                            f"{horodatage()} 🗑️ Fichier supprimé dans {dossier}: {fichier}"
                         )
                     if (
                         dossier in fichiers_detectes
