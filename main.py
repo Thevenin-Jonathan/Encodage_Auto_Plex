@@ -8,8 +8,9 @@ from constants import dossiers_presets
 file_encodage = Queue()
 
 # Démarrer le thread de traitement de la file d'attente d'encodage
-thread_encodage = Thread(target=traitement_file_encodage, args=(
-    file_encodage,), daemon=True)
+thread_encodage = Thread(
+    target=traitement_file_encodage, args=(file_encodage,), daemon=True
+)
 thread_encodage.start()
 
 # Surveiller les dossiers spécifiés

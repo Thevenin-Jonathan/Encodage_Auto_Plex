@@ -4,13 +4,9 @@
       "ChildrenArray": [
         {
           "AlignAVStart": false,
-          "AudioCopyMask": [
-            "copy:aac"
-          ],
+          "AudioCopyMask": ["copy:aac"],
           "AudioEncoderFallback": "av_aac",
-          "AudioLanguageList": [
-            "any"
-          ],
+          "AudioLanguageList": ["any"],
           "AudioList": [
             {
               "AudioBitrate": 192,
@@ -85,11 +81,7 @@
           "SubtitleBurnBehavior": "first",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": [
-            "fra",
-            "und",
-            "any"
-          ],
+          "SubtitleLanguageList": ["fra", "und", "any"],
           "SubtitleTrackSelectionBehavior": "all",
           "VideoAvgBitrate": 1500,
           "VideoColorMatrixCode": 0,
@@ -112,14 +104,9 @@
         },
         {
           "AlignAVStart": false,
-          "AudioCopyMask": [
-            "copy:aac"
-          ],
+          "AudioCopyMask": ["copy:aac"],
           "AudioEncoderFallback": "av_aac",
-          "AudioLanguageList": [
-            "fra",
-            "any"
-          ],
+          "AudioLanguageList": ["fra", "any"],
           "AudioList": [
             {
               "AudioBitrate": 192,
@@ -195,10 +182,7 @@
           "SubtitleBurnBehavior": "first",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": [
-            "fra",
-            "und"
-          ],
+          "SubtitleLanguageList": ["fra", "und"],
           "SubtitleTrackSelectionBehavior": "all",
           "VideoAvgBitrate": 1000,
           "VideoColorMatrixCode": 0,
@@ -230,9 +214,7 @@
             "copy:dtshd"
           ],
           "AudioEncoderFallback": "av_aac",
-          "AudioLanguageList": [
-            "fra"
-          ],
+          "AudioLanguageList": ["fra"],
           "AudioList": [
             {
               "AudioBitrate": 192,
@@ -308,10 +290,7 @@
           "SubtitleBurnBehavior": "first",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": [
-            "fra",
-            "und"
-          ],
+          "SubtitleLanguageList": ["fra", "und"],
           "SubtitleTrackSelectionBehavior": "all",
           "VideoAvgBitrate": 6000,
           "VideoColorMatrixCode": 0,
@@ -334,13 +313,9 @@
         },
         {
           "AlignAVStart": false,
-          "AudioCopyMask": [
-            "copy:aac"
-          ],
+          "AudioCopyMask": ["copy:aac"],
           "AudioEncoderFallback": "av_aac",
-          "AudioLanguageList": [
-            "fra"
-          ],
+          "AudioLanguageList": ["fra"],
           "AudioList": [
             {
               "AudioBitrate": 192,
@@ -416,10 +391,7 @@
           "SubtitleBurnBehavior": "first",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": [
-            "fra",
-            "und"
-          ],
+          "SubtitleLanguageList": ["fra", "und"],
           "SubtitleTrackSelectionBehavior": "all",
           "VideoAvgBitrate": 1000,
           "VideoColorMatrixCode": 0,
@@ -442,13 +414,9 @@
         },
         {
           "AlignAVStart": false,
-          "AudioCopyMask": [
-            "copy:aac"
-          ],
+          "AudioCopyMask": ["copy:aac"],
           "AudioEncoderFallback": "av_aac",
-          "AudioLanguageList": [
-            "fra"
-          ],
+          "AudioLanguageList": ["fra"],
           "AudioList": [
             {
               "AudioBitrate": 192,
@@ -526,10 +494,7 @@
           "SubtitleBurnBehavior": "first",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": [
-            "fra",
-            "und"
-          ],
+          "SubtitleLanguageList": ["fra", "und"],
           "SubtitleTrackSelectionBehavior": "all",
           "VideoAvgBitrate": 1500,
           "VideoColorMatrixCode": 0,
@@ -554,10 +519,7 @@
           "AlignAVStart": false,
           "AudioCopyMask": [],
           "AudioEncoderFallback": "av_aac",
-          "AudioLanguageList": [
-            "fra",
-            "any"
-          ],
+          "AudioLanguageList": ["fra", "any"],
           "AudioList": [
             {
               "AudioBitrate": 128,
@@ -637,10 +599,7 @@
           "SubtitleBurnBehavior": "none",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": [
-            "fra",
-            "any"
-          ],
+          "SubtitleLanguageList": ["fra", "any"],
           "SubtitleTrackSelectionBehavior": "none",
           "VideoAvgBitrate": 0,
           "VideoColorMatrixCode": 0,
@@ -663,13 +622,9 @@
         },
         {
           "AlignAVStart": false,
-          "AudioCopyMask": [
-            "copy:aac"
-          ],
+          "AudioCopyMask": ["copy:aac"],
           "AudioEncoderFallback": "av_aac",
-          "AudioLanguageList": [
-            "fra"
-          ],
+          "AudioLanguageList": ["fra"],
           "AudioList": [
             {
               "AudioBitrate": 192,
@@ -745,10 +700,7 @@
           "SubtitleBurnBehavior": "first",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": [
-            "fra",
-            "und"
-          ],
+          "SubtitleLanguageList": ["fra", "und"],
           "SubtitleTrackSelectionBehavior": "all",
           "VideoAvgBitrate": 1000,
           "VideoColorMatrixCode": 0,
@@ -771,9 +723,7 @@
         },
         {
           "AlignAVStart": false,
-          "AudioCopyMask": [
-            "copy:aac"
-          ],
+          "AudioCopyMask": ["copy:aac"],
           "AudioEncoderFallback": "av_aac",
           "AudioLanguageList": [],
           "AudioList": [
