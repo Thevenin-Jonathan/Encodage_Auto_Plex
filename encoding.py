@@ -46,10 +46,24 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         copier_fichier_dossier_encodage_manuel(input_path)
         return
 
+    # Supposons que pistes_audio et sous_titres sont déjà définis
     options_audio = f'--audio={",".join(map(str, pistes_audio))}'
     options_sous_titres = f'--subtitle={",".join(map(str, sous_titres))}'
-    options_burn = f"--subtitle-burned={sous_titres.index(
-        sous_titres_burn) + 1}" if sous_titres_burn is not None else ""
+    options_burn = f"--subtitle-burned={sous_titres.index(sous_titres_burn) + 1}" if sous_titres_burn is not None else ""
+
+    # Générer autant de chaînes vides que le nombre de pistes audio
+    aname_values = ','.join(['""' for _ in pistes_audio])
+    options_aname = f'--aname={aname_values}'
+
+    # Calculer le nombre de sous-titres à inclure dans --subname
+    if sous_titres_burn is not None:
+        num_sous_titres = len(sous_titres) - 1
+    else:
+        num_sous_titres = len(sous_titres)
+
+    # Générer autant de chaînes vides que le nombre de sous-titres (ajusté si nécessaire)
+    subname_values = ','.join(['""' for _ in range(num_sous_titres)])
+    options_subname = f'--subname={subname_values}'
 
     commande = [
         "HandBrakeCLI",
@@ -57,8 +71,15 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         "-i", input_path,
         "-o", output_path,
         "--preset", preset,
-    ] + [options_audio] + [options_sous_titres] + [options_burn]
+        options_audio,
+        options_sous_titres,
+        options_burn,
+        options_aname,
+        options_subname
+    ]
+
     print(f"{horodatage()} 🔧 Commande d'encodage : {' '.join(commande)}")
+
 
     with console_lock:
         print(f"{horodatage()} 🚀 Lancement de l'encodage pour {fichier} avec le preset {
