@@ -19,12 +19,12 @@ fichier_presets = "custom_presets.json"
 # Critères pour filtrer les pistes françaises indésirables
 criteres_audios = [
     "vfq",
-    "ad",
+    " ad",
+    "-ad",
     "audiodescription",
     "quebec",
     "nad",
     "descriptive audio",
-    "fr-ad",
 ]
 
 # Critères pour les sous-titres
