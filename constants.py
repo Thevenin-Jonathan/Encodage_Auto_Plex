@@ -19,6 +19,13 @@ dossier_sortie = "D:/Ripped"
 # Fichier de presets personnalisés
 fichier_presets = "custom_presets.json"
 
+# Fichier de sauvegarde des fichiers détectés et encodés
+fichier_sauvegarde = "fichiers_detectes.json"
+fichier_encodes = "fichiers_encodes.json"
+
+# Extensions de fichiers à surveiller
+extensions = [".mkv", ".mp4", ".avi"]
+
 # Critères pour filtrer les pistes françaises indésirables
 criteres_audios = [
     "vfq",
@@ -40,16 +47,13 @@ dossier_encodage_manuel = "D:/Torrents/Encodage_manuel"
 # Taille maximal des messages de notifications windows
 maxsize_message = 70
 
+
 # Obtenir l'horodatage actuel
-
-
 def horodatage():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 # Fonction pour enlever les accents d'une chaîne de caractères et convertir en minuscules
-
-
 def enlever_accents(input_str):
     nfkd_form = unicodedata.normalize("NFKD", input_str.lower())
     return "".join([c for c in nfkd_form if not unicodedata.combining(c)])

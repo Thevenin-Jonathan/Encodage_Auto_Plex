@@ -2,14 +2,7 @@ import os
 import time
 from datetime import datetime
 from file_handling import charger_fichiers, sauvegarder_fichiers
-from constants import debug_mode
-
-# Fichier de sauvegarde des fichiers détectés et encodés
-fichier_sauvegarde = "fichiers_detectes.json"
-fichier_encodes = "fichiers_encodes.json"
-
-# Extensions de fichiers à surveiller
-extensions = [".mkv", ".mp4", ".avi"]
+from constants import debug_mode, fichier_encodes, fichier_sauvegarde, extensions
 
 
 # Obtenir l'horodatage actuel
