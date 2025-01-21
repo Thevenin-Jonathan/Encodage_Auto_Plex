@@ -17,13 +17,20 @@ from plyer import notification  # Importer plyer
 console_lock = threading.Lock()
 
 
+def read_output(pipe, process_stdout):
+    for line in iter(pipe.readline, ""):
+        with console_lock:
+            print(line, end="")
+        process_stdout.append(line)
+    pipe.close()
+
+
 def lancer_encodage(dossier, fichier, preset, file_encodage):
     input_path = os.path.join(dossier, fichier)
     # Vérifier si le fichier a déjà été encodé pour éviter les encodages en boucle
     if "_encoded" in fichier:
         print(
-            f"{horodatage()} 🔄 Le fichier {
-              fichier} a déjà été encodé, il est ignoré."
+            f"{horodatage()} 🔄 Le fichier {fichier} a déjà été encodé, il est ignoré."
         )
         return
 
@@ -96,8 +103,25 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
 
     try:
         process = subprocess.Popen(
-            commande, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+            commande, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
+
+        stdout = []
+        stderr = []
+
+        stdout_thread = threading.Thread(
+            target=read_output, args=(process.stdout, stdout)
+        )
+        stderr_thread = threading.Thread(
+            target=read_output, args=(process.stderr, stderr)
+        )
+
+        stdout_thread.start()
+        stderr_thread.start()
+
+        stdout_thread.join()
+        stderr_thread.join()
+
         last_percent_complete = -1
         percent_pattern = re.compile(r"Encoding:.*?(\d+\.\d+)\s?%")
         with tqdm(
@@ -107,21 +131,18 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
             leave=True,
             dynamic_ncols=True,
         ) as pbar:
-            while True:
-                output = process.stdout.readline()
-                if output == "" and process.poll() is not None:
-                    break
-                if output:
-                    match = percent_pattern.search(output)
-                    if match:
-                        percent_complete = float(match.group(1))
-                        if percent_complete != last_percent_complete:
-                            pbar.n = percent_complete
-                            pbar.refresh()
-                            last_percent_complete = percent_complete
+            for line in stdout:
+                match = percent_pattern.search(line)
+                if match:
+                    percent_complete = float(match.group(1))
+                    if percent_complete != last_percent_complete:
+                        pbar.n = percent_complete
+                        pbar.refresh()
+                        last_percent_complete = percent_complete
             # Forcer la barre de progression à atteindre 100% à la fin
             pbar.n = 100
             pbar.refresh()
+
         process.wait()
         with console_lock:
             if process.returncode == 0:
@@ -145,6 +166,8 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
                     app_name="Encoder App",
                     timeout=5,
                 )
+                # Affichage des erreurs
+                print(f"{horodatage()} ⚠️ Erreurs: {stderr}")
     except subprocess.CalledProcessError as e:
         with console_lock:
             print(
