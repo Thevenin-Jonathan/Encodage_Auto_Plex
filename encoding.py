@@ -1,23 +1,26 @@
-from tqdm import tqdm
 import threading
+import os
+import subprocess
+import re
+from tqdm import tqdm
+from audio_selection import selectionner_pistes_audio
+from subtitle_selection import selectionner_sous_titres
+from constants import (
+    dossier_sortie,
+    fichier_presets,
+    horodatage,
+    maxsize_message,
+    debug_mode,
+)
+from plyer import notification  # Importer plyer
 from file_operations import (
     obtenir_pistes,
     verifier_dossiers,
     copier_fichier_dossier_encodage_manuel,
 )
-from audio_selection import selectionner_pistes_audio
-from subtitle_selection import selectionner_sous_titres
-from constants import dossier_sortie, fichier_presets, horodatage, maxsize_message
-import os
-import subprocess
-import re
-from plyer import notification  # Importer plyer
 
 # Verrou pour synchroniser l'accès à la console
 console_lock = threading.Lock()
-
-# Définir la variable debug_mode
-debug_mode = False  # Change cette valeur à True pour activer le mode débogage
 
 
 def read_output(pipe, process_output):

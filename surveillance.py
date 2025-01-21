@@ -2,6 +2,7 @@ import os
 import time
 from datetime import datetime
 from file_handling import charger_fichiers, sauvegarder_fichiers
+from constants import debug_mode
 
 # Fichier de sauvegarde des fichiers détectés et encodés
 fichier_sauvegarde = "fichiers_detectes.json"
@@ -52,13 +53,14 @@ def surveille_dossiers(dossiers_presets, file_encodage):
 
             if nouveaux_fichiers:
                 for fichier in nouveaux_fichiers:
-                    if fichier.endswith("_encoded.mp4"):
+                    if fichier.endswith("_encoded.mkv"):
                         # Ignorer les fichiers déjà encodés
                         continue
-                    print(
-                        f"{horodatage()} 🆕 Nouveau fichier détecté dans {
-                          dossier}: {fichier}"
-                    )
+                    if debug_mode:
+                        print(
+                            f"{horodatage()} 🆕 Nouveau fichier détecté dans {
+                            dossier}: {fichier}"
+                        )
                     if dossier not in fichiers_detectes:
                         fichiers_detectes[dossier] = []
                     fichiers_detectes[dossier].append(fichier)
@@ -75,10 +77,11 @@ def surveille_dossiers(dossiers_presets, file_encodage):
 
             if fichiers_supprimes:
                 for fichier in fichiers_supprimes:
-                    print(
-                        f"{horodatage()} 🗑️ Fichier supprimé dans {
-                          dossier}: {fichier}"
-                    )
+                    if debug_mode:
+                        print(
+                            f"{horodatage()} 🗑️ Fichier supprimé dans {
+                            dossier}: {fichier}"
+                        )
                     if (
                         dossier in fichiers_detectes
                         and fichier in fichiers_detectes[dossier]
