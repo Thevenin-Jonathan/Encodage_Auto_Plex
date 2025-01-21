@@ -16,12 +16,15 @@ from plyer import notification  # Importer plyer
 # Verrou pour synchroniser l'accès à la console
 console_lock = threading.Lock()
 
+# Définir la variable debug_mode
+debug_mode = False  # Change cette valeur à True pour activer le mode débogage
 
-def read_output(pipe, process_stdout):
+
+def read_output(pipe, process_output):
     for line in iter(pipe.readline, ""):
         with console_lock:
             print(line, end="")
-        process_stdout.append(line)
+        process_output.append(line)
     pipe.close()
 
 
@@ -86,7 +89,8 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         "--mixdown=5point1",
     ]
 
-    print(f"{horodatage()} 🔧 Commande d'encodage : {' '.join(commande)}")
+    if debug_mode:
+        print(f"{horodatage()} 🔧 Commande d'encodage : {' '.join(commande)}")
 
     with console_lock:
         print(
@@ -102,25 +106,30 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         )
 
     try:
-        process = subprocess.Popen(
-            commande, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
+        if debug_mode:
+            process = subprocess.Popen(
+                commande, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+            )
 
-        stdout = []
-        stderr = []
+            stdout = []
+            stderr = []
 
-        stdout_thread = threading.Thread(
-            target=read_output, args=(process.stdout, stdout)
-        )
-        stderr_thread = threading.Thread(
-            target=read_output, args=(process.stderr, stderr)
-        )
+            stdout_thread = threading.Thread(
+                target=read_output, args=(process.stdout, stdout)
+            )
+            stderr_thread = threading.Thread(
+                target=read_output, args=(process.stderr, stderr)
+            )
 
-        stdout_thread.start()
-        stderr_thread.start()
+            stdout_thread.start()
+            stderr_thread.start()
 
-        stdout_thread.join()
-        stderr_thread.join()
+            stdout_thread.join()
+            stderr_thread.join()
+        else:
+            process = subprocess.Popen(
+                commande, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+            )
 
         last_percent_complete = -1
         percent_pattern = re.compile(r"Encoding:.*?(\d+\.\d+)\s?%")
@@ -131,14 +140,21 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
             leave=True,
             dynamic_ncols=True,
         ) as pbar:
-            for line in stdout:
-                match = percent_pattern.search(line)
-                if match:
-                    percent_complete = float(match.group(1))
-                    if percent_complete != last_percent_complete:
-                        pbar.n = percent_complete
-                        pbar.refresh()
-                        last_percent_complete = percent_complete
+            while True:
+                output = process.stdout.readline()
+                if output == "" and process.poll() is not None:
+                    break
+                if output:
+                    if debug_mode:
+                        with console_lock:
+                            print(output.strip())
+                    match = percent_pattern.search(output)
+                    if match:
+                        percent_complete = float(match.group(1))
+                        if percent_complete != last_percent_complete:
+                            pbar.n = percent_complete
+                            pbar.refresh()
+                            last_percent_complete = percent_complete
             # Forcer la barre de progression à atteindre 100% à la fin
             pbar.n = 100
             pbar.refresh()
@@ -166,8 +182,9 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
                     app_name="Encoder App",
                     timeout=5,
                 )
-                # Affichage des erreurs
-                print(f"{horodatage()} ⚠️ Erreurs: {stderr}")
+                if debug_mode:
+                    # Affichage des erreurs en mode débogage
+                    print(f"{horodatage()} ⚠️ Erreurs: {stderr}")
     except subprocess.CalledProcessError as e:
         with console_lock:
             print(
