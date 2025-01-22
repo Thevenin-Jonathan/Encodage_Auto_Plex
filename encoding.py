@@ -24,6 +24,14 @@ console_lock = threading.Lock()
 
 
 def read_output(pipe, process_output):
+    """
+    Lit les sorties standard (stdout) et les erreurs (stderr) d'un processus en cours
+    et les affiche dans la console tout en les ajoutant à une liste.
+
+    Arguments:
+    pipe -- Flux de sortie ou d'erreur du processus.
+    process_output -- Liste pour stocker les sorties lues.
+    """
     for line in iter(pipe.readline, ""):
         with console_lock:
             print(line, end="")
@@ -32,6 +40,16 @@ def read_output(pipe, process_output):
 
 
 def lancer_encodage(dossier, fichier, preset, file_encodage):
+    """
+    Lance l'encodage d'un fichier en utilisant HandBrakeCLI avec le preset spécifié.
+    Gère les options audio et sous-titres, et met à jour la console et les notifications.
+
+    Arguments:
+    dossier -- Chemin du dossier contenant le fichier à encoder.
+    fichier -- Nom du fichier à encoder.
+    preset -- Preset HandBrakeCLI à utiliser pour l'encodage.
+    file_encodage -- Queue pour la file d'attente d'encodage.
+    """
     input_path = os.path.join(dossier, fichier)
     # Vérifier si le fichier a déjà été encodé pour éviter les encodages en boucle
     if "_encoded" in fichier:
@@ -43,11 +61,14 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
     output_path = os.path.join(
         dossier_sortie, os.path.splitext(fichier)[0] + "_encoded.mkv"
     )  # Modifier l'extension de sortie en .mkv et le chemin
+
     # Initialiser short_fichier avec le nom complet par défaut
     short_fichier = fichier
+    # Réductiion du nom de fichier si il dépasse la valeur indiqué dans la constante
     if len(short_fichier) > maxsize_message:
         short_fichier = short_fichier[: maxsize_message - 3] + "..."
 
+    # Obtenir les informations des pistes du fichier
     info_pistes = obtenir_pistes(input_path)
     if info_pistes is None:
         print(
@@ -56,11 +77,13 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         copier_fichier_dossier_encodage_manuel(input_path)
         return
 
+    # Sélectionner les pistes audio en fonction du preset
     pistes_audio = selectionner_pistes_audio(info_pistes, preset)
     if pistes_audio is None:
         copier_fichier_dossier_encodage_manuel(input_path)
         return
 
+    # Sélectionner les sous-titres en fonction du preset
     sous_titres, sous_titres_burn = selectionner_sous_titres(info_pistes, preset)
     if sous_titres is None:
         copier_fichier_dossier_encodage_manuel(input_path)
@@ -74,6 +97,7 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         else ""
     )
 
+    # Construire la commande HandBrakeCLI
     commande = [
         "HandBrakeCLI",
         "--preset-import-file",
@@ -110,6 +134,7 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
 
     try:
         if debug_mode:
+            # En mode debug, capturer les sorties stdout et stderr
             process = subprocess.Popen(
                 commande, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
             )
@@ -130,6 +155,7 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
             stdout_thread.join()
             stderr_thread.join()
         else:
+            # En mode standard, capturer seulement stdout et combiner stderr avec stdout
             process = subprocess.Popen(
                 commande, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
             )
@@ -205,6 +231,13 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
 
 
 def traitement_file_encodage(file_encodage):
+    """
+    Traite les fichiers d'encodage en vérifiant les dossiers, en ajoutant les fichiers à la file d'attente
+    et en affichant les informations de progression.
+
+    Arguments:
+    file_encodage -- Queue pour la file d'attente d'encodage.
+    """
     verifier_dossiers()
     with tqdm(
         total=0,
@@ -214,16 +247,21 @@ def traitement_file_encodage(file_encodage):
         bar_format="{desc}: {n_fmt}",
     ) as pbar_queue:
         while True:
+            # Mettre à jour la barre de progression avec le nombre de fichiers en attente
             pbar_queue.total = file_encodage.qsize()
             pbar_queue.refresh()
+            # Obtenir le prochain fichier de la file d'attente
             dossier, fichier, preset = file_encodage.get()
             with console_lock:
                 print(
                     f"\n{horodatage()} 🔄 Traitement du fichier en cours: {
                       fichier} dans le dossier {dossier}"
                 )
+            # Lancer l'encodage du fichier
             lancer_encodage(dossier, fichier, preset, file_encodage)
+            # Marquer la tâche comme terminée
             file_encodage.task_done()
+            # Mettre à jour la barre de progression avec le nombre de fichiers restants en attente
             pbar_queue.total = file_encodage.qsize()
             pbar_queue.refresh()
             with console_lock:

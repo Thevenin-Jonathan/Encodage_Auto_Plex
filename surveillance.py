@@ -5,13 +5,18 @@ from file_handling import charger_fichiers, sauvegarder_fichiers
 from constants import debug_mode, fichier_encodes, fichier_sauvegarde, extensions
 
 
-# Obtenir l'horodatage actuel
 def horodatage():
+    """
+    Retourne l'horodatage actuel sous forme de chaîne de caractères.
+    """
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
-# Obtenir la liste initiale des fichiers dans un dossier
 def obtenir_fichiers(dossier):
+    """
+    Retourne un ensemble de fichiers présents dans le dossier dont les extensions
+    correspondent à celles spécifiées dans la liste 'extensions'.
+    """
     try:
         return {
             fichier
@@ -23,10 +28,21 @@ def obtenir_fichiers(dossier):
         return set()
 
 
-# Fonction pour surveiller les dossiers
 def surveille_dossiers(dossiers_presets, file_encodage):
+    """
+    Surveille les dossiers spécifiés et ajoute les nouveaux fichiers détectés
+    à la file d'attente d'encodage. La fonction ignore les fichiers déjà encodés
+    et sauvegarde l'état actuel des fichiers détectés et encodés.
+
+    Arguments:
+    dossiers_presets -- Dictionnaire contenant les dossiers à surveiller et leurs presets associés.
+    file_encodage -- Queue pour la file d'attente d'encodage.
+    """
+    # Charger les fichiers détectés et encodés à partir des fichiers de sauvegarde
     fichiers_detectes = charger_fichiers(fichier_sauvegarde)
     fichiers_encodes = charger_fichiers(fichier_encodes)
+
+    # Obtenir la liste initiale des fichiers dans chaque dossier
     fichiers_initiaux = {
         dossier: obtenir_fichiers(dossier) for dossier in dossiers_presets
     }
@@ -35,10 +51,13 @@ def surveille_dossiers(dossiers_presets, file_encodage):
 
     while True:
         for dossier, preset in dossiers_presets.items():
+            # Obtenir la liste actuelle des fichiers dans le dossier
             fichiers_actuels = obtenir_fichiers(dossier)
+            # Déterminer les nouveaux fichiers et les fichiers supprimés
             nouveaux_fichiers = fichiers_actuels - fichiers_initiaux[dossier]
             fichiers_supprimes = fichiers_initiaux[dossier] - fichiers_actuels
 
+            # Traiter les nouveaux fichiers détectés
             if nouveaux_fichiers:
                 for fichier in nouveaux_fichiers:
                     # Vérifier si le fichier se termine par l'une des extensions encodées
@@ -63,6 +82,7 @@ def surveille_dossiers(dossiers_presets, file_encodage):
                             f"{horodatage()} 📥 Fichier ajouté à la file d'attente d'encodage: {fichier}"
                         )
 
+            # Traiter les fichiers supprimés détectés
             if fichiers_supprimes:
                 for fichier in fichiers_supprimes:
                     if debug_mode:
@@ -80,9 +100,12 @@ def surveille_dossiers(dossiers_presets, file_encodage):
                     ):
                         fichiers_encodes[dossier].remove(fichier)
 
+            # Mettre à jour la liste des fichiers initialement détectés pour le prochain cycle
             fichiers_initiaux[dossier] = fichiers_actuels
 
         # Sauvegarder l'état actuel des fichiers détectés et encodés
         sauvegarder_fichiers(fichier_sauvegarde, fichiers_detectes)
         sauvegarder_fichiers(fichier_encodes, fichiers_encodes)
+
+        # Attendre avant le prochain cycle de surveillance
         time.sleep(10)

@@ -5,6 +5,16 @@ from constants import dossier_encodage_manuel, dossier_sortie, horodatage
 
 
 def obtenir_pistes(filepath):
+    """
+    Exécute HandBrakeCLI pour scanner le fichier spécifié et obtenir des informations sur les pistes
+    sous forme de JSON.
+
+    Arguments:
+    filepath -- Chemin du fichier à analyser.
+
+    Retourne:
+    Un dictionnaire contenant les informations des pistes si réussi, None sinon.
+    """
     commande = ["HandBrakeCLI", "-i", filepath, "--scan", "--json"]
     result = subprocess.run(commande, capture_output=True, text=True)
     if result.returncode != 0:
@@ -26,14 +36,22 @@ def obtenir_pistes(filepath):
 
 
 def verifier_dossiers():
+    """
+    Vérifie si les dossiers de sortie et d'encodage manuel existent, et les crée sinon.
+    """
     if not os.path.exists(dossier_sortie):
         os.makedirs(dossier_sortie)
     if not os.path.exists(dossier_encodage_manuel):
         os.makedirs(dossier_encodage_manuel)
 
 
-# Fonction pour copier un fichier dans le dossier d'encodage manuel en évitant les conflits de noms
 def copier_fichier_dossier_encodage_manuel(filepath):
+    """
+    Copie le fichier spécifié dans le dossier d'encodage manuel en évitant les conflits de noms.
+
+    Arguments:
+    filepath -- Chemin du fichier à copier.
+    """
     base_name = os.path.basename(filepath)
     new_path = os.path.join(dossier_encodage_manuel, base_name)
     if os.path.exists(new_path):
@@ -41,13 +59,10 @@ def copier_fichier_dossier_encodage_manuel(filepath):
         counter = 1
         while os.path.exists(new_path):
             new_path = os.path.join(
-                dossier_encodage_manuel,
-                f"{
-                                    base}_{counter}{extension}",
+                dossier_encodage_manuel, f"{base}_{counter}{extension}"
             )
             counter += 1
     os.rename(filepath, new_path)
     print(
-        f"{horodatage()} 📁 Fichier déplacé pour encodage manuel: {
-          os.path.basename(new_path)}"
+        f"{horodatage()} 📁 Fichier déplacé pour encodage manuel: {os.path.basename(new_path)}"
     )

@@ -1,8 +1,17 @@
 from constants import horodatage, criteres_audios, enlever_accents
 
 
-# Fonction pour sélectionner les pistes audios en fonction du preset
 def selectionner_pistes_audio(info_pistes, preset):
+    """
+    Sélectionne les pistes audio à inclure en fonction des informations des pistes et du preset spécifié.
+
+    Arguments:
+    info_pistes -- Dictionnaire contenant les informations des pistes audio.
+    preset -- Chaîne de caractères représentant le preset utilisé pour l'encodage.
+
+    Retourne:
+    Une liste des numéros de pistes des pistes audio sélectionnées, ou None si aucune piste valide n'est trouvée.
+    """
     pistes_audio_selectionnees = []
 
     if preset in ["Dessins animés FR 1000kbps", "1080p HD-Light 1500kbps"]:
@@ -14,7 +23,7 @@ def selectionner_pistes_audio(info_pistes, preset):
         ]
         if not pistes_francaises:
             print(f"{horodatage()} 🚫 Aucune piste audio française disponible.")
-            return None  # Aucune piste française disponible
+            return None
 
         # Filtrer les pistes selon les critères
         pistes_audio_finales = [
@@ -29,7 +38,7 @@ def selectionner_pistes_audio(info_pistes, preset):
             print(
                 f"{horodatage()} 🚫 Il y a soit aucune piste valide, soit plusieurs pistes valides."
             )
-            return None  # Soit aucune piste valide, soit plusieurs pistes valides
+            return None
 
         pistes_audio_selectionnees = [pistes_audio_finales[0]["TrackNumber"]]
 
@@ -41,10 +50,8 @@ def selectionner_pistes_audio(info_pistes, preset):
 
         # Vérifier si la liste contient au moins deux entrées
         if len(pistes_audio_selectionnees) < 2:
-            # Afficher un message d'erreur si la liste des pistes audio contient moins de deux entrées
             print(
-                f"{horodatage(
-            )} 🚫 La liste des pistes audio sélectionnées contient moins de deux entrées."
+                f"{horodatage()} 🚫 La liste des pistes audio sélectionnées contient moins de deux entrées."
             )
             return None
 
@@ -68,7 +75,6 @@ def selectionner_pistes_audio(info_pistes, preset):
                 ),
             )
         else:
-            # Afficher un message d'erreur si aucune piste audio française n'est disponible
             print(f"{horodatage()} 🚫 Aucune piste audio française disponible.")
             return None
 
