@@ -15,7 +15,7 @@ class TestUtils(unittest.TestCase):
         self.assertRegex(result, r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}")
 
     def test_enlever_accents(self):
-        self.assertEqual(enlever_accents("éàç"), "eac")
+        self.assertEqual(enlever_accents("éàçAB"), "eacab")
 
 
 if __name__ == "__main__":
