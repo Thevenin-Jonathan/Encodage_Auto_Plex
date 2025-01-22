@@ -33,8 +33,6 @@ def verifier_dossiers():
 
 
 # Fonction pour copier un fichier dans le dossier d'encodage manuel en évitant les conflits de noms
-
-
 def copier_fichier_dossier_encodage_manuel(filepath):
     base_name = os.path.basename(filepath)
     new_path = os.path.join(dossier_encodage_manuel, base_name)

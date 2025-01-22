@@ -5,9 +5,8 @@ from constants import (
     enlever_accents,
 )
 
+
 # Fonction pour sélectionner les sous-titres en fonction du preset
-
-
 def selectionner_sous_titres(info_pistes, preset):
     sous_titres_selectionnes = []  # Liste des sous-titres à inclure dans la vidéo
     sous_titres_burn = None  # Sous-titre à incruster (burn)

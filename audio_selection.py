@@ -1,8 +1,7 @@
 from constants import horodatage, criteres_audios, enlever_accents
 
+
 # Fonction pour sélectionner les pistes audios en fonction du preset
-
-
 def selectionner_pistes_audio(info_pistes, preset):
     pistes_audio_selectionnees = []
 
