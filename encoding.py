@@ -7,16 +7,19 @@ from audio_selection import selectionner_pistes_audio
 from subtitle_selection import selectionner_sous_titres
 from constants import (
     dossier_sortie,
-    fichier_presets,
-    horodatage,
-    maxsize_message,
     debug_mode,
 )
-from plyer import notification  # Importer plyer
+from utils import horodatage
 from file_operations import (
     obtenir_pistes,
     verifier_dossiers,
     copier_fichier_dossier_encodage_manuel,
+)
+from command_builder import construire_commande_handbrake
+from notifications import (
+    notifier_encodage_lancement,
+    notifier_encodage_termine,
+    notifier_erreur_encodage,
 )
 
 # Verrou pour synchroniser l'accès à la console
@@ -62,12 +65,6 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         dossier_sortie, os.path.splitext(fichier)[0] + "_encoded.mkv"
     )  # Modifier l'extension de sortie en .mkv et le chemin
 
-    # Initialiser short_fichier avec le nom complet par défaut
-    short_fichier = fichier
-    # Réductiion du nom de fichier si il dépasse la valeur indiqué dans la constante
-    if len(short_fichier) > maxsize_message:
-        short_fichier = short_fichier[: maxsize_message - 3] + "..."
-
     # Obtenir les informations des pistes du fichier
     info_pistes = obtenir_pistes(input_path)
     if info_pistes is None:
@@ -98,39 +95,23 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
     )
 
     # Construire la commande HandBrakeCLI
-    commande = [
-        "HandBrakeCLI",
-        "--preset-import-file",
-        fichier_presets,
-        "-i",
+    commande = construire_commande_handbrake(
         input_path,
-        "-o",
         output_path,
-        "--preset",
         preset,
         options_audio,
         options_sous_titres,
         options_burn,
-        "--aencoder=aac",
-        "--ab=192",
-        "--mixdown=5point1",
-    ]
+    )
 
     if debug_mode:
         print(f"{horodatage()} 🔧 Commande d'encodage : {' '.join(commande)}")
 
     with console_lock:
         print(
-            f"{horodatage()} � Lancement de l'encodage pour {fichier} avec le preset {
-              preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres} - burn {sous_titres_burn}"
+            f"{horodatage()} � Lancement de l'encodage pour {fichier} avec le preset {preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres} - burn {sous_titres_burn}"
         )
-        notification.notify(
-            title="Encodage Lancement",
-            message=f"L'encodage pour {short_fichier} a été lancé.\nFiles en attente: {
-                file_encodage.qsize()}",
-            app_name="Encoder App",
-            timeout=5,
-        )
+        notifier_encodage_lancement(fichier, file_encodage)
 
     try:
         if debug_mode:
@@ -192,42 +173,20 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         with console_lock:
             if process.returncode == 0:
                 print(
-                    f"\n{horodatage()} ✅ Encodage terminé pour {fichier} avec le preset {
-                      preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres}"
+                    f"\n{horodatage()} ✅ Encodage terminé pour {fichier} avec le preset {preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres}"
                 )
-                notification.notify(
-                    title="Encodage Terminé",
-                    message=f"L'encodage pour {short_fichier} est terminé.\nFiles en attente: {
-                        file_encodage.qsize()}",
-                    app_name="Encoder App",
-                    timeout=5,
-                )
+                notifier_encodage_termine(fichier, file_encodage)
             else:
                 print(f"\n{horodatage()} ❌ Erreur lors de l'encodage de {fichier}")
-                notification.notify(
-                    title="Erreur d'Encodage",
-                    message=f"Une erreur est survenue lors de l'encodage de {
-                        short_fichier}.",
-                    app_name="Encoder App",
-                    timeout=5,
-                )
+                notifier_erreur_encodage(fichier)
                 if debug_mode:
                     # Affichage des erreurs en mode débogage
                     print(f"{horodatage()} ⚠️ Erreurs: {stderr}")
     except subprocess.CalledProcessError as e:
         with console_lock:
-            print(
-                f"\n{horodatage()} ❌ Erreur lors de l'encodage de {
-                  fichier}: {e}"
-            )
+            print(f"\n{horodatage()} ❌ Erreur lors de l'encodage de {fichier}: {e}")
             print(f"\n{horodatage()} ⚠️ Erreur de la commande : {e.stderr}")
-            notification.notify(
-                title="Erreur d'Encodage",
-                message=f"Une erreur est survenue lors de l'encodage de {
-                    short_fichier}: {e}",
-                app_name="Encoder App",
-                timeout=5,
-            )
+            notifier_erreur_encodage(fichier)
 
 
 def traitement_file_encodage(file_encodage):
@@ -254,8 +213,7 @@ def traitement_file_encodage(file_encodage):
             dossier, fichier, preset = file_encodage.get()
             with console_lock:
                 print(
-                    f"\n{horodatage()} 🔄 Traitement du fichier en cours: {
-                      fichier} dans le dossier {dossier}"
+                    f"\n{horodatage()} 🔄 Traitement du fichier en cours: {fichier} dans le dossier {dossier}"
                 )
             # Lancer l'encodage du fichier
             lancer_encodage(dossier, fichier, preset, file_encodage)
@@ -265,11 +223,7 @@ def traitement_file_encodage(file_encodage):
             pbar_queue.total = file_encodage.qsize()
             pbar_queue.refresh()
             with console_lock:
+                print(f"\n{horodatage()} Files en attente: {file_encodage.qsize()}")
                 print(
-                    f"\n{horodatage()} Files en attente: {
-                      file_encodage.qsize()}"
-                )
-                print(
-                    f"\n{horodatage()} 🏁 Fichier traité et encodé: {
-                      fichier} dans le dossier {dossier}"
+                    f"\n{horodatage()} 🏁 Fichier traité et encodé: {fichier} dans le dossier {dossier}"
                 )
