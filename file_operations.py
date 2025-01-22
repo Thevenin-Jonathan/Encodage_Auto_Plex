@@ -1,7 +1,8 @@
 import os
 import json
 import subprocess
-from constants import dossier_encodage_manuel, dossier_sortie, horodatage
+from constants import dossier_encodage_manuel, dossier_sortie
+from utils import horodatage
 
 
 def obtenir_pistes(filepath):
