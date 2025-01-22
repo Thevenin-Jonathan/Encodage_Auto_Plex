@@ -48,7 +48,7 @@ def selectionner_sous_titres(info_pistes, preset):
         # Parcourir les sous-titres du premier titre (assumant qu'il n'y en a qu'un)
         for sous_titre in info_pistes["TitleList"][0]["SubtitleList"]:
             # Garder uniquement les sous-titres en français
-            if sous_titre["LanguageCode"] == "fra":
+            if sous_titre.get("LanguageCode", "") == "fra":
                 name_normalisee = enlever_accents(sous_titre.get("Name", ""))
                 # Exclure les sous-titres qui contiennent des critères à supprimer
                 if name_normalisee == "" or not any(
@@ -64,6 +64,10 @@ def selectionner_sous_titres(info_pistes, preset):
             # Trop de sous-titres à inclure, retourner une erreur
             print(f"{horodatage()} 🚫 Trop de sous-titres à inclure.")
             return None, None
+        elif sous_titres_selectionnes == []:
+            # Aucun sous-titre français trouvé, retourner une erreur
+            print(f"{horodatage()} 🚫 Pas de sous-titres français disponibles.")
+            return None, None
 
         # Retourner les sous-titres sélectionnés et le sous-titre à incruster
         return sous_titres_selectionnes, sous_titres_burn
@@ -73,7 +77,7 @@ def selectionner_sous_titres(info_pistes, preset):
         # Parcourir les sous-titres du premier titre
         for sous_titre in info_pistes["TitleList"][0]["SubtitleList"]:
             # Garder uniquement les sous-titres en français
-            if sous_titre["LanguageCode"] == "fra":
+            if sous_titre.get("LanguageCode", "") == "fra":
                 if sous_titres_burn is None:
                     # Définir le sous-titre à incruster
                     sous_titres_burn = sous_titre["TrackNumber"]
@@ -88,9 +92,7 @@ def selectionner_sous_titres(info_pistes, preset):
             return sous_titres_selectionnes, sous_titres_burn
         else:
             # Aucun sous-titre français trouvé, retourner une erreur
-            print(
-                f"{horodatage()} 🚫 Pas de sous-titres français disponibles pour ce manga VO."
-            )
+            print(f"{horodatage()} 🚫 Pas de sous-titres français disponibles.")
             return None, None
     else:
         # Si le preset ne correspond à aucun cas géré, retourner une erreur
