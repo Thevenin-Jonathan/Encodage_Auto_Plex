@@ -20,7 +20,7 @@ def selectionner_pistes_audio(info_pistes, preset):
         pistes_francaises = [
             piste
             for piste in info_pistes["TitleList"][0]["AudioList"]
-            if piste["LanguageCode"] == "fra"
+            if piste.get("LanguageCode", "") == "fra"
         ]
         if not pistes_francaises:
             print(f"{horodatage()} 🚫 Aucune piste audio française disponible.")
@@ -30,9 +30,9 @@ def selectionner_pistes_audio(info_pistes, preset):
         pistes_audio_finales = [
             piste
             for piste in pistes_francaises
-            if "Name" not in piste
-            or not any(
-                critere in enlever_accents(piste["Name"]) for critere in criteres_audios
+            if not any(
+                critere in enlever_accents(piste.get("Name", ""))
+                for critere in criteres_audios
             )
         ]
         if len(pistes_audio_finales) != 1:
@@ -58,14 +58,14 @@ def selectionner_pistes_audio(info_pistes, preset):
 
         # Vérifier s'il existe au moins une piste audio en français
         if any(
-            piste["LanguageCode"] == "fra"
+            piste.get("LanguageCode", "") == "fra"
             for piste in info_pistes["TitleList"][0]["AudioList"]
         ):
             # Trouver le numéro de la première piste audio en français
             piste_francaise_index = next(
                 piste["TrackNumber"]
                 for piste in info_pistes["TitleList"][0]["AudioList"]
-                if piste["LanguageCode"] == "fra"
+                if piste.get("LanguageCode", "") == "fra"
             )
 
             # Déplacer la piste audio française en première position dans la liste
@@ -84,5 +84,9 @@ def selectionner_pistes_audio(info_pistes, preset):
         pistes_audio_selectionnees = [
             piste["TrackNumber"] for piste in info_pistes["TitleList"][0]["AudioList"]
         ]
+
+        if len(pistes_audio_selectionnees) > 2:
+            print(f"{horodatage()} 🚫 Il y a plus de 2 pistes valides.")
+            return None
 
     return pistes_audio_selectionnees
