@@ -1,15 +1,8 @@
 import os
 import time
-from datetime import datetime
 from file_handling import charger_fichiers, sauvegarder_fichiers
 from constants import debug_mode, fichier_encodes, fichier_sauvegarde, extensions
-
-
-def horodatage():
-    """
-    Retourne l'horodatage actuel sous forme de chaîne de caractères.
-    """
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+from utils import horodatage
 
 
 def obtenir_fichiers(dossier):

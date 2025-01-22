@@ -1,9 +1,8 @@
 from constants import (
-    horodatage,
     criteres_sous_titres_burn,
     criteres_sous_titres_supprimer,
-    enlever_accents,
 )
+from utils import horodatage, enlever_accents
 
 
 def selectionner_sous_titres(info_pistes, preset):

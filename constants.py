@@ -1,6 +1,3 @@
-import unicodedata
-from datetime import datetime
-
 # Définir la variable debug_mode
 debug_mode = False  # Change cette valeur à True pour activer le mode débogage
 
@@ -46,14 +43,3 @@ dossier_encodage_manuel = "D:/Torrents/Encodage_manuel"
 
 # Taille maximal des messages de notifications windows
 maxsize_message = 70
-
-
-# Obtenir l'horodatage actuel
-def horodatage():
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-
-# Fonction pour enlever les accents d'une chaîne de caractères et convertir en minuscules
-def enlever_accents(input_str):
-    nfkd_form = unicodedata.normalize("NFKD", input_str.lower())
-    return "".join([c for c in nfkd_form if not unicodedata.combining(c)])
