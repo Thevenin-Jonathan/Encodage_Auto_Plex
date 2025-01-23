@@ -9,7 +9,7 @@ from constants import (
     dossier_sortie,
     debug_mode,
 )
-from utils import horodatage
+from utils import horodatage, tronquer_nom_fichier
 from file_operations import (
     obtenir_pistes,
     verifier_dossiers,
@@ -53,17 +53,23 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
     preset -- Preset HandBrakeCLI à utiliser pour l'encodage.
     file_encodage -- Queue pour la file d'attente d'encodage.
     """
-    input_path = os.path.join(dossier, fichier)
+
+    # Récupérer uniquement le nom du fichier à partir du chemin complet
+    nom_fichier = os.path.basename(fichier)
+    # Tronquer le nom du fichier pour l'affichage
+    short_fichier = tronquer_nom_fichier(nom_fichier)
+
+    input_path = os.path.join(dossier, nom_fichier)
     # Vérifier si le fichier a déjà été encodé pour éviter les encodages en boucle
-    if "_encoded" in fichier:
+    if "_encoded" in nom_fichier:
         print(
-            f"{horodatage()} 🔄 Le fichier {fichier} a déjà été encodé, il est ignoré."
+            f"{horodatage()} 🔄 Le fichier {nom_fichier} a déjà été encodé, il est ignoré."
         )
         return
 
     # Assurez-vous que le chemin de sortie est correctement défini
     output_path = os.path.join(
-        dossier_sortie, os.path.basename(os.path.splitext(fichier)[0] + "_encoded.mkv")
+        dossier_sortie, os.path.splitext(nom_fichier)[0] + "_encoded.mkv"
     )  # Modifier l'extension de sortie en .mkv et le chemin
 
     # Obtenir les informations des pistes du fichier
@@ -110,9 +116,9 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
 
     with console_lock:
         print(
-            f"{horodatage()} � Lancement de l'encodage pour {fichier} avec le preset {preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres} - burn {sous_titres_burn}"
+            f"{horodatage()} � Lancement de l'encodage pour {short_fichier} avec le preset {preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres} - burn {sous_titres_burn}"
         )
-        notifier_encodage_lancement(fichier, file_encodage)
+        notifier_encodage_lancement(short_fichier, file_encodage)
 
     try:
         if debug_mode:
@@ -146,7 +152,7 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         percent_pattern = re.compile(r"Encoding:.*?(\d+\.\d+)\s?%")
         with tqdm(
             total=100,
-            desc=f"Encodage de {fichier}",
+            desc=f"Encodage de {short_fichier}",
             position=0,
             leave=True,
             dynamic_ncols=True,
@@ -174,20 +180,22 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         with console_lock:
             if process.returncode == 0:
                 print(
-                    f"\n{horodatage()} ✅ Encodage terminé pour {fichier} avec le preset {preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres}"
+                    f"\n{horodatage()} ✅ Encodage terminé pour {short_fichier} avec le preset {preset}, pistes audio {pistes_audio}, et sous-titres {sous_titres}"
                 )
-                notifier_encodage_termine(fichier, file_encodage)
+                notifier_encodage_termine(nom_fichier, file_encodage)
             else:
-                print(f"\n{horodatage()} ❌ Erreur lors de l'encodage de {fichier}")
-                notifier_erreur_encodage(fichier)
+                print(f"\n{horodatage()} ❌ Erreur lors de l'encodage de {nom_fichier}")
+                notifier_erreur_encodage(nom_fichier)
                 if debug_mode:
                     # Affichage des erreurs en mode débogage
                     print(f"{horodatage()} ⚠️ Erreurs: {stderr}")
     except subprocess.CalledProcessError as e:
         with console_lock:
-            print(f"\n{horodatage()} ❌ Erreur lors de l'encodage de {fichier}: {e}")
+            print(
+                f"\n{horodatage()} ❌ Erreur lors de l'encodage de {nom_fichier}: {e}"
+            )
             print(f"\n{horodatage()} ⚠️ Erreur de la commande : {e.stderr}")
-            notifier_erreur_encodage(fichier)
+            notifier_erreur_encodage(nom_fichier)
 
 
 def traitement_file_encodage(file_encodage):
@@ -212,9 +220,15 @@ def traitement_file_encodage(file_encodage):
             pbar_queue.refresh()
             # Obtenir le prochain fichier de la file d'attente
             dossier, fichier, preset = file_encodage.get()
+
+            # Récupérer uniquement le nom du fichier à partir du chemin complet
+            nom_fichier = os.path.basename(fichier)
+            # Tronquer le nom du fichier pour l'affichage
+            short_fichier = tronquer_nom_fichier(nom_fichier)
+
             with console_lock:
                 print(
-                    f"\n{horodatage()} 🔄 Traitement du fichier en cours: {fichier} dans le dossier {dossier}"
+                    f"\n{horodatage()} 🔄 Traitement du fichier en cours: {short_fichier} dans le dossier {dossier}"
                 )
             # Lancer l'encodage du fichier
             lancer_encodage(dossier, fichier, preset, file_encodage)
@@ -226,5 +240,5 @@ def traitement_file_encodage(file_encodage):
             with console_lock:
                 print(f"\n{horodatage()} Files en attente: {file_encodage.qsize()}")
                 print(
-                    f"\n{horodatage()} 🏁 Fichier traité et encodé: {fichier} dans le dossier {dossier}"
+                    f"\n{horodatage()} 🏁 Fichier traité et encodé: {short_fichier} dans le dossier {dossier}"
                 )
