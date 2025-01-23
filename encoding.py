@@ -59,7 +59,7 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
     # Tronquer le nom du fichier pour l'affichage
     short_fichier = tronquer_nom_fichier(nom_fichier)
 
-    input_path = os.path.join(dossier, nom_fichier)
+    input_path = os.path.join(dossier, fichier)
     # Vérifier si le fichier a déjà été encodé pour éviter les encodages en boucle
     if "_encoded" in nom_fichier:
         print(
