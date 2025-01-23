@@ -15,7 +15,7 @@ def selectionner_pistes_audio(info_pistes, preset):
     """
     pistes_audio_selectionnees = []
 
-    if preset in ["Dessins animés FR 1000kbps", "1080p HD-Light 1500kbps"]:
+    if preset in ["Dessins animes FR 1000kbps", "1080p HD-Light 1500kbps"]:
         # Sélectionner les pistes audio en français
         pistes_francaises = [
             piste
@@ -88,6 +88,6 @@ def selectionner_pistes_audio(info_pistes, preset):
 
     if pistes_audio_selectionnees == []:
         # Aucun sous-titre français trouvé, retourner une erreur
-        print(f"{horodatage()} 🚫 Pas de sous-titres français disponibles.")
+        print(f"{horodatage()} 🚫 Pas de piste audio française disponibles.")
         return None
     return pistes_audio_selectionnees
