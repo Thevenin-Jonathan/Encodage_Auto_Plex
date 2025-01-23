@@ -59,7 +59,9 @@ class TestAudioSelection(unittest.TestCase):
             ]
         }
 
-    def test_selectionner_pistes_audio_dessins_animes(self):
+        self.info_pistes4 = {"TitleList": [{"AudioList": []}]}
+
+    def test_selectionner_pistes_audio_films_series(self):
         preset = "1080p HD-Light 1500kbps"
 
         # Test avec info_pistes1
@@ -68,11 +70,15 @@ class TestAudioSelection(unittest.TestCase):
 
         # Test avec info_pistes2
         result = selectionner_pistes_audio(self.info_pistes2, preset)
-        self.assertEqual(result, None)
+        self.assertEqual(result, [1])
 
         # Test avec info_pistes3
         result = selectionner_pistes_audio(self.info_pistes3, preset)
         self.assertEqual(result, [1])
+
+        # Test avec info_pistes4
+        result = selectionner_pistes_audio(self.info_pistes4, preset)
+        self.assertEqual(result, None)
 
     def test_selectionner_pistes_audio_mangas_multi(self):
         preset = "Mangas MULTI 1000kbps"
@@ -89,6 +95,10 @@ class TestAudioSelection(unittest.TestCase):
         result = selectionner_pistes_audio(self.info_pistes3, preset)
         self.assertEqual(result, [1, 2])
 
+        # Test avec info_pistes4
+        result = selectionner_pistes_audio(self.info_pistes4, preset)
+        self.assertEqual(result, None)
+
     def test_selectionner_pistes_audio_mangas_vo(self):
         preset = "Mangas VO 1000kbps"
 
@@ -102,7 +112,11 @@ class TestAudioSelection(unittest.TestCase):
 
         # Test avec info_pistes3
         result = selectionner_pistes_audio(self.info_pistes3, preset)
-        self.assertEqual(result, [2, 1])
+        self.assertEqual(result, [1, 2])
+
+        # Test avec info_pistes4
+        result = selectionner_pistes_audio(self.info_pistes4, preset)
+        self.assertEqual(result, None)
 
 
 if __name__ == "__main__":
