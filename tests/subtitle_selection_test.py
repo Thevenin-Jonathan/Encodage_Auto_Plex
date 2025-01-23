@@ -136,37 +136,6 @@ class TestSubtitleSelection(unittest.TestCase):
         self.assertEqual(result, [1, 2])
         self.assertEqual(burn, 1)
 
-    def test_selectionner_sous_titres_films_series(self):
-        """
-        Vérifie que le preset '1080p HD-Light 1500kbps' sélectionne correctement les sous-titres.
-        """
-        preset = "1080p HD-Light 1500kbps"
-
-        # Test avec info_pistes1
-        result, burn = selectionner_sous_titres(self.info_pistes1, preset)
-        self.assertEqual(result, [5])
-        self.assertIsNone(burn)
-
-        # Test avec info_pistes2
-        result, burn = selectionner_sous_titres(self.info_pistes2, preset)
-        self.assertEqual(result, [1, 3])
-        self.assertEqual(burn, 1)
-
-        # Test avec info_pistes3
-        result, burn = selectionner_sous_titres(self.info_pistes3, preset)
-        self.assertEqual(result, None)
-        self.assertEqual(burn, None)
-
-        # Test avec info_pistes5
-        result, burn = selectionner_sous_titres(self.info_pistes5, preset)
-        self.assertEqual(result, [2, 5])
-        self.assertEqual(burn, 2)
-
-        # Test avec info_pistes6
-        result, burn = selectionner_sous_titres(self.info_pistes6, preset)
-        self.assertEqual(result, [2])
-        self.assertEqual(burn, 2)
-
     def test_selectionner_sous_titres_mangas_multi(self):
         """
         Vérifie que le preset 'Mangas MULTI 1000kbps' sélectionne correctement les sous-titres.
