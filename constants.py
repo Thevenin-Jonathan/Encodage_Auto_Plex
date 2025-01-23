@@ -14,11 +14,11 @@ dossiers_presets = {
 dossier_sortie = "D:/Ripped"
 
 # Fichier de presets personnalisés
-fichier_presets = "custom_presets.json"
+fichier_presets = "datas/custom_presets.json"
 
 # Fichier de sauvegarde des fichiers détectés et encodés
-fichier_sauvegarde = "fichiers_detectes.json"
-fichier_encodes = "fichiers_encodes.json"
+fichier_sauvegarde = "datas/fichiers_detectes.json"
+fichier_encodes = "datas/fichiers_encodes.json"
 
 # Extensions de fichiers à surveiller
 extensions = [".mkv", ".mp4", ".avi"]
