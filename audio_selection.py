@@ -37,24 +37,30 @@ def selectionner_pistes_audio(info_pistes, preset):
         ]
         if len(pistes_audio_finales) != 1:
             print(
-                f"{horodatage()} 🚫 Il y a soit aucune piste valide, soit plusieurs pistes valides."
+                f"{horodatage()} 🚫 Il y a soit aucune piste valide, soit plusieurs pistes valides. (Pistes : {pistes_audio_finales})"
             )
             return None
 
         pistes_audio_selectionnees = [pistes_audio_finales[0]["TrackNumber"]]
 
-    elif preset == "Mangas MULTI 1000kbps":
+    elif preset in ["Mangas MULTI 1000kbps", "Mangas VO 1000kbps"]:
         # Sélectionner les numéros de piste audio depuis la première entrée de la liste des titres
         pistes_audio_selectionnees = [
             piste["TrackNumber"] for piste in info_pistes["TitleList"][0]["AudioList"]
         ]
 
-        # Vérifier si la liste contient au moins deux entrées
-        if len(pistes_audio_selectionnees) < 2:
-            print(
-                f"{horodatage()} 🚫 La liste des pistes audio sélectionnées contient moins de deux entrées."
-            )
-            return None
+        if preset == "Mangas MULTI 1000kbps":
+            # Vérifier si la liste contient au moins deux entrées
+            if len(pistes_audio_selectionnees) < 2:
+                print(
+                    f"{horodatage()} 🚫 La liste des pistes audio sélectionnées contient moins de deux entrées."
+                )
+                return None
+
+        if preset == "Mangas VO 1000kbps":
+            if len(pistes_audio_selectionnees) > 2:
+                print(f"{horodatage()} 🚫 Il y a plus de 2 pistes valides.")
+                return None
 
         # Vérifier s'il existe au moins une piste audio en français
         if any(
@@ -76,17 +82,12 @@ def selectionner_pistes_audio(info_pistes, preset):
                 ),
             )
         else:
-            print(f"{horodatage()} 🚫 Aucune piste audio française disponible.")
-            return None
+            if preset == "Mangas MULTI 1000kbps":
+                print(f"{horodatage()} 🚫 Aucune piste audio française disponible.")
+                return None
 
-    elif preset == "Mangas VO 1000kbps":
-        # Sélectionner toutes les pistes audio
-        pistes_audio_selectionnees = [
-            piste["TrackNumber"] for piste in info_pistes["TitleList"][0]["AudioList"]
-        ]
-
-        if len(pistes_audio_selectionnees) > 2:
-            print(f"{horodatage()} 🚫 Il y a plus de 2 pistes valides.")
-            return None
-
+    if pistes_audio_selectionnees == []:
+        # Aucun sous-titre français trouvé, retourner une erreur
+        print(f"{horodatage()} 🚫 Pas de sous-titres français disponibles.")
+        return None
     return pistes_audio_selectionnees
