@@ -46,24 +46,19 @@ def verifier_dossiers():
         os.makedirs(dossier_encodage_manuel)
 
 
-def copier_fichier_dossier_encodage_manuel(filepath):
+def ajouter_fichier_a_liste_encodage_manuel(filepath):
     """
-    Copie le fichier spécifié dans le dossier d'encodage manuel en évitant les conflits de noms.
+    Ajoute le nom du fichier spécifié dans une liste dans un document .txt à la racine du projet.
 
     Arguments:
-    filepath -- Chemin du fichier à copier.
+    filepath -- Chemin du fichier à ajouter.
     """
     base_name = os.path.basename(filepath)
-    new_path = os.path.join(dossier_encodage_manuel, base_name)
-    if os.path.exists(new_path):
-        base, extension = os.path.splitext(base_name)
-        counter = 1
-        while os.path.exists(new_path):
-            new_path = os.path.join(
-                dossier_encodage_manuel, f"{base}_{counter}{extension}"
-            )
-            counter += 1
-    os.rename(filepath, new_path)
+    liste_fichiers_path = os.path.join(os.path.dirname(__file__), "Encodage_manuel.txt")
+    if not os.path.exists(liste_fichiers_path):
+        open(liste_fichiers_path, "w").close()
+    with open(liste_fichiers_path, "a") as file:
+        file.write(base_name + "\n")
     print(
-        f"{horodatage()} 📁 Fichier déplacé pour encodage manuel: {os.path.basename(new_path)}"
+        f"{horodatage()} 📁 Nom du fichier ajouté à la liste d'encodage manuel : {base_name}"
     )

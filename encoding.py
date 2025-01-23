@@ -13,7 +13,7 @@ from utils import horodatage, tronquer_nom_fichier
 from file_operations import (
     obtenir_pistes,
     verifier_dossiers,
-    copier_fichier_dossier_encodage_manuel,
+    ajouter_fichier_a_liste_encodage_manuel,
 )
 from command_builder import construire_commande_handbrake
 from notifications import (
@@ -78,19 +78,18 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         print(
             f"{horodatage()} ❌ Erreur lors de l'obtention des informations des pistes audio."
         )
-        copier_fichier_dossier_encodage_manuel(input_path)
+        ajouter_fichier_a_liste_encodage_manuel(input_path)
         return
 
     # Sélectionner les pistes audio en fonction du preset
     pistes_audio = selectionner_pistes_audio(info_pistes, preset)
     if pistes_audio is None:
-        copier_fichier_dossier_encodage_manuel(input_path)
+        ajouter_fichier_a_liste_encodage_manuel(input_path)
         return
-
     # Sélectionner les sous-titres en fonction du preset
     sous_titres, sous_titres_burn = selectionner_sous_titres(info_pistes, preset)
     if sous_titres is None:
-        copier_fichier_dossier_encodage_manuel(input_path)
+        ajouter_fichier_a_liste_encodage_manuel(input_path)
         return
 
     options_audio = f'--audio={",".join(map(str, pistes_audio))}'
@@ -237,8 +236,5 @@ def traitement_file_encodage(file_encodage):
             # Mettre à jour la barre de progression avec le nombre de fichiers restants en attente
             pbar_queue.total = file_encodage.qsize()
             pbar_queue.refresh()
-            with console_lock:
-                print(f"\n{horodatage()} Files en attente: {file_encodage.qsize()}")
-                print(
-                    f"\n{horodatage()} 🏁 Fichier traité et encodé: {short_fichier} dans le dossier {dossier}"
-                )
+            # with console_lock:
+            #     print(f"\n{horodatage()} Fichiers en attente: {file_encodage.qsize()}")

@@ -10,7 +10,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from file_operations import (
     obtenir_pistes,
     verifier_dossiers,
-    copier_fichier_dossier_encodage_manuel,
 )
 from constants import dossier_encodage_manuel, dossier_sortie
 from utils import horodatage
