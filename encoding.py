@@ -61,8 +61,9 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         )
         return
 
+    # Assurez-vous que le chemin de sortie est correctement défini
     output_path = os.path.join(
-        dossier_sortie, os.path.splitext(fichier)[0] + "_encoded.mkv"
+        dossier_sortie, os.path.basename(os.path.splitext(fichier)[0] + "_encoded.mkv")
     )  # Modifier l'extension de sortie en .mkv et le chemin
 
     # Obtenir les informations des pistes du fichier

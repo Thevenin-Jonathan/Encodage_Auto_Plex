@@ -7,18 +7,15 @@ from utils import horodatage
 
 def obtenir_fichiers(dossier):
     """
-    Retourne un ensemble de fichiers présents dans le dossier dont les extensions
+    Retourne un ensemble de fichiers présents dans le dossier et ses sous-dossiers dont les extensions
     correspondent à celles spécifiées dans la liste 'extensions'.
     """
-    try:
-        return {
-            fichier
-            for fichier in os.listdir(dossier)
-            if os.path.splitext(fichier)[1].lower() in extensions
-        }
-    except FileNotFoundError:
-        print(f"{horodatage()} 📁 Dossier non trouvé: {dossier}")
-        return set()
+    fichiers = set()
+    for root, _, files in os.walk(dossier):
+        for fichier in files:
+            if os.path.splitext(fichier)[1].lower() in extensions:
+                fichiers.add(os.path.join(root, fichier))
+    return fichiers
 
 
 def surveille_dossiers(dossiers_presets, file_encodage):
