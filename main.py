@@ -3,6 +3,10 @@ from threading import Thread
 from surveillance import surveille_dossiers
 from encoding import traitement_file_encodage
 from constants import dossiers_presets
+from initialization import vider_fichiers
+
+# Vider les fichiers détectés et encodés au démarrage
+vider_fichiers()
 
 # File d'attente pour les encodages
 file_encodage = Queue()
