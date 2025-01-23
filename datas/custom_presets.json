@@ -81,7 +81,7 @@
           "SubtitleBurnBehavior": "first",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": ["fra", "und", "any"],
+          "SubtitleLanguageList": ["any"],
           "SubtitleTrackSelectionBehavior": "all",
           "VideoAvgBitrate": 1500,
           "VideoColorMatrixCode": 0,
@@ -182,7 +182,7 @@
           "SubtitleBurnBehavior": "first",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": ["fra", "und"],
+          "SubtitleLanguageList": ["any"],
           "SubtitleTrackSelectionBehavior": "all",
           "VideoAvgBitrate": 1000,
           "VideoColorMatrixCode": 0,
@@ -519,7 +519,7 @@
           "AlignAVStart": false,
           "AudioCopyMask": [],
           "AudioEncoderFallback": "av_aac",
-          "AudioLanguageList": ["fra", "any"],
+          "AudioLanguageList": ["any"],
           "AudioList": [
             {
               "AudioBitrate": 128,
@@ -624,7 +624,7 @@
           "AlignAVStart": false,
           "AudioCopyMask": ["copy:aac"],
           "AudioEncoderFallback": "av_aac",
-          "AudioLanguageList": ["fra"],
+          "AudioLanguageList": ["any"],
           "AudioList": [
             {
               "AudioBitrate": 192,
@@ -700,7 +700,7 @@
           "SubtitleBurnBehavior": "first",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": ["fra", "und"],
+          "SubtitleLanguageList": ["any"],
           "SubtitleTrackSelectionBehavior": "all",
           "VideoAvgBitrate": 1000,
           "VideoColorMatrixCode": 0,
@@ -725,7 +725,7 @@
           "AlignAVStart": false,
           "AudioCopyMask": ["copy:aac"],
           "AudioEncoderFallback": "av_aac",
-          "AudioLanguageList": [],
+          "AudioLanguageList": ["any"],
           "AudioList": [
             {
               "AudioBitrate": 192,
@@ -799,7 +799,7 @@
           "SubtitleBurnBehavior": "first",
           "SubtitleBurnBDSub": false,
           "SubtitleBurnDVDSub": false,
-          "SubtitleLanguageList": [],
+          "SubtitleLanguageList": ["any"],
           "SubtitleTrackSelectionBehavior": "all",
           "VideoAvgBitrate": 1000,
           "VideoColorMatrixCode": 0,
