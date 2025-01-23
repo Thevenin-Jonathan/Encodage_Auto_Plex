@@ -26,6 +26,7 @@ extensions = [".mkv", ".mp4", ".avi"]
 # Critères pour filtrer les pistes françaises indésirables
 criteres_audios = [
     "vfq",
+    "ad",
     " ad",
     "-ad",
     "audiodescription",
