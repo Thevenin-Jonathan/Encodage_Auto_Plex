@@ -86,6 +86,20 @@ class TestSubtitleSelection(unittest.TestCase):
             ]
         }
 
+        self.info_pistes7 = {
+            "TitleList": [
+                {
+                    "SubtitleList": [
+                        {"TrackNumber": 1, "LanguageCode": "fra", "Name": "VFF Forced"},
+                        {"TrackNumber": 2, "LanguageCode": "fra", "Name": "VFF"},
+                        {"TrackNumber": 3, "LanguageCode": "fra", "Name": "VFQ Forced"},
+                        {"TrackNumber": 4, "LanguageCode": "fra", "Name": "VFQ"},
+                        {"TrackNumber": 5, "LanguageCode": "fra", "Name": "SDH"},
+                    ]
+                },
+            ]
+        }
+
     def test_selectionner_sous_titres_dessins_animes(self):
         """
         Vérifie que le preset 'Dessins animes FR 1000kbps' sélectionne correctement les sous-titres.
@@ -116,6 +130,11 @@ class TestSubtitleSelection(unittest.TestCase):
         result, burn = selectionner_sous_titres(self.info_pistes6, preset)
         self.assertEqual(result, [2])
         self.assertEqual(burn, 2)
+
+        # Test avec info_pistes7
+        result, burn = selectionner_sous_titres(self.info_pistes7, preset)
+        self.assertEqual(result, [1, 2])
+        self.assertEqual(burn, 1)
 
     def test_selectionner_sous_titres_films_series(self):
         """
