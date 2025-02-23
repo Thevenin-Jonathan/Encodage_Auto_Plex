@@ -1,3 +1,12 @@
+import sys
+import os
+
+# Définir le chemin de base en fonction de l'exécution en tant que script ou exécutable
+if hasattr(sys, "_MEIPASS"):
+    BASE_PATH = sys._MEIPASS
+else:
+    BASE_PATH = os.path.dirname(__file__)
+
 # Définir la variable debug_mode
 debug_mode = False  # Change cette valeur à True pour activer le mode débogage
 
@@ -14,11 +23,11 @@ dossiers_presets = {
 dossier_sortie = "D:/Ripped"
 
 # Fichier de presets personnalisés
-fichier_presets = "datas/custom_presets.json"
+fichier_presets = os.path.join(BASE_PATH, "datas", "custom_presets.json")
 
 # Fichier de sauvegarde des fichiers détectés et encodés
-fichier_sauvegarde = "datas/fichiers_detectes.json"
-fichier_encodes = "datas/fichiers_encodes.json"
+fichier_sauvegarde = os.path.join(BASE_PATH, "datas", "fichiers_detectes.json")
+fichier_encodes = os.path.join(BASE_PATH, "datas", "fichiers_encodes.json")
 
 # Extensions de fichiers à surveiller
 extensions = [".mkv", ".mp4", ".avi"]
