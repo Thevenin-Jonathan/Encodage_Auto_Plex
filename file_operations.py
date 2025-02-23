@@ -1,8 +1,17 @@
 import os
 import json
 import subprocess
-from constants import dossier_encodage_manuel, dossier_sortie
+import sys
+from constants import debug_mode, dossier_encodage_manuel, dossier_sortie
 from utils import horodatage
+
+# Définir le chemin du fichier en fonction de l'exécution en tant que script ou exécutable
+if hasattr(sys, "_MEIPASS"):
+    THIS_FILEPATH = os.path.dirname(sys.executable)
+else:
+    THIS_FILEPATH = os.path.dirname(__file__)
+
+fichier_encodage_manuel = os.path.join(THIS_FILEPATH, "Encodage_manuel.txt")
 
 
 def obtenir_pistes(filepath):
@@ -54,11 +63,20 @@ def ajouter_fichier_a_liste_encodage_manuel(filepath):
     filepath -- Chemin du fichier à ajouter.
     """
     base_name = os.path.basename(filepath)
-    liste_fichiers_path = os.path.join(os.path.dirname(__file__), "Encodage_manuel.txt")
-    if not os.path.exists(liste_fichiers_path):
-        open(liste_fichiers_path, "w").close()
-    with open(liste_fichiers_path, "a") as file:
-        file.write(base_name + "\n")
-    print(
-        f"{horodatage()} 📁 Nom du fichier ajouté à la liste d'encodage manuel : {base_name}"
-    )
+    liste_fichiers_path = fichier_encodage_manuel
+
+    # Instructions de débogage
+    if debug_mode:
+        print(f"Chemin du fichier d'encodage manuel : {liste_fichiers_path}")
+
+    try:
+        if not os.path.exists(liste_fichiers_path):
+            open(liste_fichiers_path, "w").close()
+            print(f"Fichier créé : {liste_fichiers_path}")
+        with open(liste_fichiers_path, "a") as file:
+            file.write(base_name + "\n")
+            print(
+                f"{horodatage()} 📁 Nom du fichier ajouté à la liste d'encodage manuel : {base_name}"
+            )
+    except Exception as e:
+        print(f"Erreur lors de l'écriture dans le fichier : {e}")
