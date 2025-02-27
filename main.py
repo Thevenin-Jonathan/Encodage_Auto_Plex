@@ -5,6 +5,7 @@ import sys
 import os
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import pyqtSignal, QObject
+import qdarkstyle  # Ajouter cet import en haut du fichier
 
 from surveillance import surveille_dossiers
 from encoding import traitement_file_encodage
@@ -32,6 +33,11 @@ class EncodingSignals(QObject):
 def main():
     # Créer l'application Qt
     app = QApplication(sys.argv)
+
+    # Appliquer le thème sombre avec des boutons plus hauts
+    base_style = qdarkstyle.load_stylesheet_pyqt5()
+    button_style = "QPushButton { min-height: 30px; }"
+    app.setStyleSheet(base_style + button_style)
 
     # Configurer le logger pour le module principal
     logger = setup_logger(__name__)
