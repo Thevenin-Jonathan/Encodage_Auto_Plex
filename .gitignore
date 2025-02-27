@@ -1,4 +1,8 @@
 __pycache__/
-Encodage_manuel.txt/
+Encodage_manuel.txt
 build/
 dist/
+*.exe
+fichiers_detectes.json
+fichiers_encodes.json
+*.prettierrc
