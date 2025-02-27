@@ -39,7 +39,7 @@ def main():
 
     # Appliquer le thème sombre avec des boutons plus hauts
     base_style = qdarkstyle.load_stylesheet_pyqt5()
-    button_style = "QPushButton { min-height: 30px; }"
+    button_style = "QPushButton { min-height: 30px; font-size: 14px; font-weight: bold; font-family: 'Segoe UI', 'Arial', sans-serif; }"
     app.setStyleSheet(base_style + button_style)
 
     # Configurer le logger pour le module principal
