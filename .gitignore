@@ -3,6 +3,8 @@ Encodage_manuel.txt
 build/
 dist/
 *.exe
-fichiers_detectes.json
-fichiers_encodes.json
+datas/fichiers_detectes.json
+datas/fichiers_encodes.json
 *.prettierrc
+logs/
+*.log
