@@ -120,7 +120,7 @@ def lancer_encodage_avec_gui(
 
         # Sélection des sous-titres selon le preset
         subtitle_tracks, burn_track = selectionner_sous_titres(info_pistes, preset)
-        if subtitle_tracks is None and preset.lower() in ["anime", "animation"]:
+        if subtitle_tracks is None:
             logger.warning(
                 f"Pas de piste de sous-titres compatible pour {nom_fichier} (requis pour {preset})"
             )
@@ -144,7 +144,7 @@ def lancer_encodage_avec_gui(
         )
         burn_option = (
             f"--subtitle-burned={subtitle_tracks.index(burn_track) + 1}"
-            if burn_track is not None and subtitle_tracks
+            if burn_track is not None
             else ""
         )
 
