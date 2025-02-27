@@ -1,5 +1,6 @@
 import logging
 from queue import Queue
+import subprocess
 from threading import Thread
 import sys
 import os
@@ -13,6 +14,21 @@ from constants import dossiers_presets
 from initialization import vider_fichiers
 from logger import setup_logger
 from gui import MainWindow, LogHandler
+
+
+# Fonction pour vérifier si HandBrakeCLI est installé
+def check_handbrake_cli():
+    try:
+        result = subprocess.run(
+            ["HandBrakeCLI", "--version"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=5,
+        )
+        return result.returncode == 0, result.stdout if result.returncode == 0 else None
+    except (FileNotFoundError, subprocess.SubprocessError):
+        return False, None
 
 
 # Classe intermédiaire pour les signaux entre threads
@@ -65,6 +81,15 @@ def main():
     app.aboutToQuit.connect(cleanup)
 
     logger.info("=== Démarrage de l'application Encodage_Auto_Plex ===")
+
+    # Vérifier l'installation de HandBrakeCLI
+    handbrake_installed, version_info = check_handbrake_cli()
+    if handbrake_installed:
+        logger.info(f"✅ HandBrakeCLI installé et opérationnel: {version_info.strip()}")
+    else:
+        logger.error(
+            "❌ HandBrakeCLI n'est pas installé ou n'est pas accessible. L'encodage ne fonctionnera pas!"
+        )
 
     # Vider les fichiers détectés et encodés au démarrage
     logger.info("Nettoyage des fichiers temporaires")
