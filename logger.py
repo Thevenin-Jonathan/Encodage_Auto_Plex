@@ -23,14 +23,19 @@ def setup_logger(name):
         "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
     )
 
-    # Handler pour le fichier uniquement (pas de console)
+    # Handler pour le fichier avec rotation automatique
     log_file = os.path.join(
         logs_dir, f"encodage_{datetime.date.today().strftime('%Y-%m-%d')}.log"
     )
+
+    # Rotation des fichiers: taille max 10MB, garder 5 fichiers d'archives
     file_handler = RotatingFileHandler(
-        log_file, maxBytes=10485760, backupCount=5
-    )  # ~10MB max
-    file_handler.setLevel(logging.DEBUG)  # DEBUG et plus pour le fichier
+        log_file,
+        maxBytes=10485760,  # 10MB
+        backupCount=5,  # Conserver 5 fichiers de backup
+        encoding="utf-8",
+    )
+    file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
 
     # Ajouter uniquement le handler pour le fichier
