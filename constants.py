@@ -50,6 +50,7 @@ criteres_sous_titres_supprimer = ["sdh", "malentendant", "vfq", "quebec"]
 
 # Dossiers pour encodage manuel
 dossier_encodage_manuel = "D:/Torrents/Encodage_manuel"
+fichier_encodage_manuel = os.path.join(BASE_PATH, "Encodage_manuel.txt")
 
 # Taille maximal des messages de notifications windows
 maxsize_message = 70

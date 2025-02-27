@@ -1,17 +1,19 @@
+import logging
 import os
 import json
 import subprocess
 import sys
-from constants import debug_mode, dossier_encodage_manuel, dossier_sortie
+from constants import (
+    debug_mode,
+    dossier_encodage_manuel,
+    dossier_sortie,
+    fichier_encodage_manuel,
+)
+from logger import colored_log, setup_logger
 from utils import horodatage
 
-# Définir le chemin du fichier en fonction de l'exécution en tant que script ou exécutable
-if hasattr(sys, "_MEIPASS"):
-    THIS_FILEPATH = os.path.dirname(sys.executable)
-else:
-    THIS_FILEPATH = os.path.dirname(__file__)
-
-fichier_encodage_manuel = os.path.join(THIS_FILEPATH, "Encodage_manuel.txt")
+# Configuration du logger
+logger = setup_logger(__name__)
 
 
 def obtenir_pistes(filepath):
@@ -55,28 +57,73 @@ def verifier_dossiers():
         os.makedirs(dossier_encodage_manuel)
 
 
-def ajouter_fichier_a_liste_encodage_manuel(filepath):
+def ajouter_fichier_a_liste_encodage_manuel(
+    filepath, nom_fichier, preset=None, signals=None
+):
     """
-    Ajoute le nom du fichier spécifié dans une liste dans un document .txt à la racine du projet.
+    Ajoute le fichier spécifié et son preset dans la liste d'encodage manuel,
+    en évitant les doublons.
 
     Arguments:
     filepath -- Chemin du fichier à ajouter.
+    preset -- Preset à utiliser pour l'encodage (optionnel).
+    signals -- Objets de signaux pour mettre à jour l'interface (optionnel).
     """
     base_name = os.path.basename(filepath)
     liste_fichiers_path = fichier_encodage_manuel
+    # Utiliser le logger déjà défini au niveau du module
+    # au lieu de créer une nouvelle instance dans la fonction
+
+    # Préparer la ligne à ajouter
+    if preset:
+        new_line = f"{filepath}|{preset}"
+    else:
+        new_line = f"{base_name}"
 
     # Instructions de débogage
     if debug_mode:
         print(f"Chemin du fichier d'encodage manuel : {liste_fichiers_path}")
 
     try:
+        # Créer le fichier s'il n'existe pas
         if not os.path.exists(liste_fichiers_path):
             open(liste_fichiers_path, "w").close()
             print(f"Fichier créé : {liste_fichiers_path}")
-        with open(liste_fichiers_path, "a") as file:
-            file.write(base_name + "\n")
-            print(
-                f"{horodatage()} 📁 Nom du fichier ajouté à la liste d'encodage manuel : {base_name}"
+            existing_lines = []
+        else:
+            # Lire les lignes existantes
+            with open(liste_fichiers_path, "r", encoding="utf-8") as file:
+                existing_lines = [line.strip() for line in file.readlines()]
+
+        # Vérifier si la ligne existe déjà
+        if new_line in existing_lines:
+            colored_log(
+                logger,  # Utiliser le logger global
+                f"Le fichier {base_name} est déjà dans la liste d'encodage manuel",
+                "INFO",
+                "orange",
             )
+            return True
+
+        colored_log(
+            logger,  # Utiliser le logger global
+            f"Ajout de {nom_fichier} à la liste des encodages manuels (pas de piste audio compatible)",
+            "INFO",
+            "orange",
+        )
+
+        # Ajouter la nouvelle ligne
+        with open(liste_fichiers_path, "a", encoding="utf-8") as file:
+            file.write(new_line + "\n")
+            print(
+                f"{horodatage()} 📁 Fichier ajouté à la liste d'encodage manuel : {base_name} {'(preset: ' + preset + ')' if preset else ''}"
+            )
+
+        # Émettre le signal pour mettre à jour l'interface
+        if signals and hasattr(signals, "update_manual_encodings"):
+            signals.update_manual_encodings.emit()
+
+        return True
     except Exception as e:
         print(f"Erreur lors de l'écriture dans le fichier : {e}")
+        return False

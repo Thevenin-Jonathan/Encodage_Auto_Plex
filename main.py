@@ -23,6 +23,9 @@ class EncodingSignals(QObject):
     encoding_done = pyqtSignal()  # signal quand l'encodage est terminé
     update_queue = pyqtSignal(list)  # liste des fichiers en attente
     update_output_path = pyqtSignal(str)  # chemin du fichier de sortie
+    update_manual_encodings = (
+        pyqtSignal()
+    )  # signal pour mettre à jour la liste des encodages manuels
 
 
 # Point d'entrée principal
@@ -66,6 +69,7 @@ def main():
     signals.update_encoding_stats.connect(window.encoding_status.update_encoding_stats)
     signals.encoding_done.connect(window.encoding_status.clear)
     signals.update_queue.connect(window.update_queue)
+    signals.update_manual_encodings.connect(window.load_manual_encodings)
 
     # File d'attente pour les encodages
     file_encodage = Queue()

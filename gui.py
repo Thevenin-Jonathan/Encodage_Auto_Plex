@@ -1,5 +1,6 @@
 import sys
 import os
+import subprocess
 import logging
 from threading import RLock
 from PyQt5.QtWidgets import (
@@ -13,6 +14,7 @@ from PyQt5.QtWidgets import (
     QProgressBar,
     QLabel,
     QFrame,
+    QListWidget,
 )
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QIcon, QFont
@@ -142,6 +144,44 @@ class MainWindow(QMainWindow):
         self.queue_text.setMaximumHeight(100)
         main_layout.addWidget(self.queue_text)
 
+        # Section des encodages manuels
+        self.manual_encodings_label = QLabel("Encodages manuels (0):")
+        self.manual_encodings_label.setFont(QFont("Arial", 10, QFont.Bold))
+        main_layout.addWidget(self.manual_encodings_label)
+
+        # Liste des encodages manuels avec possibilité de sélection
+        self.manual_list = QListWidget()
+        self.manual_list.setMaximumHeight(150)
+        self.manual_list.setSelectionMode(QListWidget.MultiSelection)
+        main_layout.addWidget(self.manual_list)
+
+        # Boutons pour gérer les encodages manuels
+        manual_buttons_layout = QHBoxLayout()
+
+        self.refresh_manual_btn = QPushButton("Rafraîchir")
+        self.refresh_manual_btn.clicked.connect(self.load_manual_encodings)
+
+        self.delete_selected_btn = QPushButton("Supprimer sélection")
+        self.delete_selected_btn.clicked.connect(self.delete_selected_encodings)
+
+        self.delete_all_btn = QPushButton("Tout supprimer")
+        self.delete_all_btn.clicked.connect(self.delete_all_encodings)
+        self.delete_all_btn.setStyleSheet("background-color: #ff6b6b;")
+
+        # Ajouter le nouveau bouton pour localiser le fichier
+        self.locate_file_btn = QPushButton("Localiser fichier")
+        self.locate_file_btn.clicked.connect(self.locate_selected_file)
+        self.locate_file_btn.setStyleSheet("background-color: #4dabf7;")
+
+        manual_buttons_layout.addWidget(self.refresh_manual_btn)
+        manual_buttons_layout.addWidget(self.delete_selected_btn)
+        manual_buttons_layout.addWidget(
+            self.locate_file_btn
+        )  # Ajouter le nouveau bouton
+        manual_buttons_layout.addWidget(self.delete_all_btn)
+
+        main_layout.addLayout(manual_buttons_layout)
+
         # Boutons de contrôle
         button_layout = QHBoxLayout()
 
@@ -168,6 +208,9 @@ class MainWindow(QMainWindow):
         # file_menu = menubar.addMenu("Fichier")
         # self.queue_action = QAction("File d'attente (0)", self)
         # file_menu.addAction(self.queue_action)
+
+        # Charger les encodages manuels au démarrage
+        self.load_manual_encodings()
 
     def add_log(self, message, level="INFO", custom_color=None):
         """Ajoute un message dans la zone de logs avec coloration selon le niveau ou personnalisée"""
@@ -247,3 +290,115 @@ class MainWindow(QMainWindow):
         self.encoding_status.clear()
         self.update_queue([])
         pass
+
+    def load_manual_encodings(self):
+        """Charge les encodages manuels depuis le fichier"""
+        self.manual_list.clear()
+        try:
+            with open("Encodage_manuel.txt", "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        self.manual_list.addItem(line)
+
+            # Mettre à jour le titre avec le nombre d'encodages
+            count = self.manual_list.count()
+            self.manual_encodings_label.setText(f"Encodages manuels ({count}):")
+        except Exception as e:
+            self.add_log(
+                f"Erreur lors du chargement des encodages manuels: {str(e)}", "ERROR"
+            )
+
+    def delete_selected_encodings(self):
+        """Supprime les encodages sélectionnés du fichier"""
+        selected_items = self.manual_list.selectedItems()
+        if not selected_items:
+            return
+
+        try:
+            # Lire toutes les lignes
+            with open("Encodage_manuel.txt", "r", encoding="utf-8") as f:
+                lines = f.readlines()
+
+            # Filtrer les lignes à conserver
+            selected_texts = [item.text() for item in selected_items]
+            filtered_lines = [
+                line for line in lines if line.strip() not in selected_texts
+            ]
+
+            # Réécrire le fichier sans les lignes sélectionnées
+            with open("Encodage_manuel.txt", "w", encoding="utf-8") as f:
+                f.writelines(filtered_lines)
+
+            self.add_log(
+                f"{len(selected_items)} encodage(s) manuel(s) supprimé(s)",
+                "INFO",
+                "green",
+            )
+            self.load_manual_encodings()
+        except Exception as e:
+            self.add_log(f"Erreur lors de la suppression: {str(e)}", "ERROR")
+
+    def delete_all_encodings(self):
+        """Supprime tous les encodages manuels du fichier"""
+        if self.manual_list.count() == 0:
+            return
+
+        try:
+            # Vider complètement le fichier
+            with open("Encodage_manuel.txt", "w", encoding="utf-8") as f:
+                pass
+
+            self.add_log(
+                "Tous les encodages manuels ont été supprimés", "INFO", "green"
+            )
+            self.load_manual_encodings()
+        except Exception as e:
+            self.add_log(f"Erreur lors de la suppression: {str(e)}", "ERROR")
+
+    def locate_selected_file(self):
+        """Ouvre l'explorateur à l'emplacement du fichier sélectionné"""
+        selected_items = self.manual_list.selectedItems()
+        if not selected_items:
+            self.add_log("Aucun fichier sélectionné", "WARNING", "orange")
+            return
+
+        # Utiliser le premier élément sélectionné
+        selected_text = selected_items[0].text()
+
+        try:
+            # Si le format est "chemin_complet|preset"
+            if "|" in selected_text:
+                filepath = selected_text.split("|")[0]
+            else:
+                # Si c'est juste le nom du fichier, impossible de localiser
+                self.add_log(
+                    "Impossible de localiser le fichier (chemin complet non disponible)",
+                    "ERROR",
+                    "red",
+                )
+                return
+
+            # Vérifier si le fichier existe
+            if not os.path.exists(filepath):
+                self.add_log(f"Le fichier n'existe pas: {filepath}", "ERROR", "red")
+                return
+
+            # Ouvrir l'explorateur Windows à l'emplacement du fichier
+            directory = os.path.dirname(filepath)
+
+            # Ouvrir l'explorateur et sélectionner le fichier
+            self.add_log(f"Ouverture de l'explorateur à: {directory}", "INFO", "green")
+
+            if os.name == "nt":  # Windows
+                # Méthode corrigée pour ouvrir l'explorateur au bon endroit
+                normalized_path = os.path.normpath(filepath)
+                # Utiliser une chaîne de commande complète avec shell=True
+                subprocess.run(f'explorer /select,"{normalized_path}"', shell=True)
+            else:  # Linux, Mac
+                subprocess.Popen(["xdg-open", directory])
+
+        except Exception as e:
+            self.add_log(
+                f"Erreur lors de la localisation du fichier: {str(e)}", "ERROR", "red"
+            )
