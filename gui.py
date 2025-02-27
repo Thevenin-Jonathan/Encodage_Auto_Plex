@@ -29,6 +29,9 @@ class LogHandler(QObject, logging.Handler):
         super().__init__()
         logging.Handler.__init__(self)
         self.flushOnClose = False
+        self.formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        )
 
     def emit(self, record):
         msg = self.format(record) if self.formatter else record.getMessage()
