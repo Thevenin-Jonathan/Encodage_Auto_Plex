@@ -43,6 +43,13 @@ def main():
     log_handler.log_signal.connect(window.add_log)
     logger.addHandler(log_handler)
 
+    # Fonction de nettoyage pour éviter l'erreur à la fermeture
+    def cleanup():
+        logger.removeHandler(log_handler)
+
+    # Connecter la fonction de nettoyage à la fermeture de l'application
+    app.aboutToQuit.connect(cleanup)
+
     logger.info("=== Démarrage de l'application Encodage_Auto_Plex ===")
 
     # Vider les fichiers détectés et encodés au démarrage

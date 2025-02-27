@@ -19,13 +19,14 @@ from PyQt5.QtGui import QIcon, QFont
 
 
 class LogHandler(QObject, logging.Handler):
-    log_signal = pyqtSignal(str)
+    log_signal = pyqtSignal(str, str)
 
     def __init__(self, level=logging.NOTSET):
         QObject.__init__(self)
         logging.Handler.__init__(self, level)
         self.lock = None  # Sera initialisé par createLock
         self.createLock()
+        self.flushOnClose = False  # Désactive le flush à la fermeture
 
     def createLock(self):
         self.lock = RLock()
@@ -39,8 +40,8 @@ class LogHandler(QObject, logging.Handler):
             self.lock.release()
 
     def emit(self, record):
-        log_entry = self.format(record)
-        self.log_signal.emit(log_entry)
+        msg = self.format(record) if self.formatter else record.getMessage()
+        self.log_signal.emit(msg, record.levelname)
 
 
 class EncodingStatusWidget(QFrame):
