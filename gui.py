@@ -135,6 +135,25 @@ class MainWindow(QMainWindow):
         self.encoding_status = EncodingStatusWidget()
         main_layout.addWidget(self.encoding_status)
 
+        # NOUVEAU: Ajouter les boutons de contrôle juste après la barre de chargement
+        control_buttons_layout = QHBoxLayout()
+
+        self.pause_button = QPushButton("Pause")
+        self.pause_button.setCheckable(True)
+        self.is_paused = False
+        self.pause_button.clicked.connect(self.toggle_pause)
+        control_buttons_layout.addWidget(self.pause_button)
+
+        self.skip_button = QPushButton("Passer")
+        control_buttons_layout.addWidget(self.skip_button)
+
+        self.stop_button = QPushButton("Stopper tout")
+        self.stop_button.setStyleSheet("background-color: #ff6b6b;")
+        control_buttons_layout.addWidget(self.stop_button)
+
+        main_layout.addLayout(control_buttons_layout)
+
+        # Ensuite, section de la file d'attente
         self.queue_label = QLabel("File d'attente (0):")
         self.queue_label.setFont(QFont("Arial", 10, QFont.Bold))
         main_layout.addWidget(self.queue_label)
@@ -181,26 +200,6 @@ class MainWindow(QMainWindow):
         manual_buttons_layout.addWidget(self.delete_all_btn)
 
         main_layout.addLayout(manual_buttons_layout)
-
-        # Boutons de contrôle
-        button_layout = QHBoxLayout()
-
-        self.pause_button = QPushButton("Pause")
-        self.pause_button.clicked.connect(self.toggle_pause)
-        self.is_paused = False
-
-        self.skip_button = QPushButton("Passer au suivant")
-        self.skip_button.clicked.connect(self.skip_encoding)
-
-        self.stop_button = QPushButton("Arrêter tous les encodages")
-        self.stop_button.clicked.connect(self.stop_all)
-        self.stop_button.setStyleSheet("background-color: #ff6b6b;")
-
-        button_layout.addWidget(self.pause_button)
-        button_layout.addWidget(self.skip_button)
-        button_layout.addWidget(self.stop_button)
-
-        main_layout.addLayout(button_layout)
 
         self.setCentralWidget(central_widget)
 
@@ -400,5 +399,7 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             self.add_log(
-                f"Erreur lors de la localisation du fichier: {str(e)}", "ERROR", "red"
+                f"Erreur lors de la localisation du fichier: {str(e)}",
+                "ERROR",
+                "red",
             )
