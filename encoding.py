@@ -2,12 +2,14 @@ import threading
 import os
 import subprocess
 import re
+import time
 from tqdm import tqdm
 from audio_selection import selectionner_pistes_audio
 from subtitle_selection import selectionner_sous_titres
 from constants import (
     dossier_sortie,
     debug_mode,
+    fichier_presets,
 )
 from utils import horodatage, tronquer_nom_fichier
 from file_operations import (
@@ -58,8 +60,30 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
     file_encodage -- Queue pour la file d'attente d'encodage.
     """
 
+    # Ajouter ces vérifications avant de lancer l'encodage
+
+    # Vérifier si le fichier existe et est accessible
+    if not os.path.exists(fichier) or not os.access(fichier, os.R_OK):
+        logger.error(
+            f"Le fichier {fichier} n'existe pas ou n'est pas accessible en lecture"
+        )
+        return False
+
+    # Vérifier si le fichier est vide ou trop petit
+    file_size = os.path.getsize(fichier)
+    if file_size < 1024 * 1024:  # Moins de 1 MB
+        logger.warning(
+            f"Le fichier {fichier} est trop petit ({file_size} octets), pourrait être corrompu"
+        )
+
     # Récupérer uniquement le nom du fichier à partir du chemin complet
     nom_fichier = os.path.basename(fichier)
+    # Créer le nom du fichier de sortie
+    base_nom, extension = os.path.splitext(nom_fichier)
+    fichier_sortie = f"{base_nom}_encoded{extension}"
+    chemin_sortie = os.path.join(dossier_sortie, fichier_sortie)
+    logger.info(f"Fichier de sortie sera enregistré à: {chemin_sortie}")
+
     # Tronquer le nom du fichier pour l'affichage
     short_fichier = tronquer_nom_fichier(nom_fichier)
 
@@ -148,6 +172,12 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
         )
         notifier_encodage_lancement(short_fichier, file_encodage)
 
+    # Dans encoding.py, avant de lancer HandBrake
+    logger.info(f"Début de l'encodage de {fichier} avec preset {preset}")
+    logger.info(f"Dossier de sortie configuré: {dossier_sortie}")
+    logger.info(f"Chemin complet du fichier de sortie: {output_path}")
+    logger.info(f"Exécution de la commande: {' '.join(commande)}")
+
     try:
         if debug_mode:
             # En mode debug, capturer les sorties stdout et stderr
@@ -229,6 +259,12 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
                     # Affichage des erreurs en mode débogage
                     logger.error(f"Erreurs d'encodage: {stderr}")
                     print(f"{horodatage()} ⚠️ Erreurs: {stderr}")
+        # Ajoutez à la fin de la fonction d'encodage dans encoding.py
+        if os.path.exists(output_path):
+            taille = os.path.getsize(output_path) / (1024 * 1024)  # En MB
+            logger.info(f"Fichier encodé avec succès: {output_path} ({taille:.2f} MB)")
+        else:
+            logger.error(f"Le fichier encodé n'a pas été trouvé: {output_path}")
     except subprocess.CalledProcessError as e:
         logger.error(
             f"Exception lors de l'encodage de {nom_fichier}: {str(e)}", exc_info=True
@@ -251,57 +287,135 @@ def lancer_encodage(dossier, fichier, preset, file_encodage):
             notifier_erreur_encodage(nom_fichier)
 
 
-def traitement_file_encodage(file_encodage):
+def normaliser_chemin(chemin):
+    return chemin.replace("\\", "/")
+
+
+def lancer_encodage_avec_gui(
+    fichier, preset, dossier, signals=None, control_flags=None
+):
+    logger = setup_logger(__name__)
+
+    # Normaliser les chemins (remplacer les antislash par des slash)
+    fichier = fichier.replace("\\", "/")
+
+    # Récupérer uniquement le nom du fichier
+    nom_fichier = os.path.basename(fichier)
+    base_nom, extension = os.path.splitext(nom_fichier)
+    fichier_sortie = f"{base_nom}_encoded{extension}"
+    chemin_sortie = os.path.join(dossier_sortie, fichier_sortie).replace("\\", "/")
+
+    logger.info(f"Fichier de sortie sera enregistré à: {chemin_sortie}")
+
+    try:
+        # Analyse des pistes du fichier
+        info_pistes = obtenir_pistes(fichier)
+        # Sélection des pistes audio selon la langue préférée
+        audio_tracks = selectionner_pistes_audio(info_pistes, fichier)
+        # Sélection des sous-titres selon la langue préférée
+        subtitle_tracks, burn_track = selectionner_sous_titres(info_pistes, fichier)
+
+        # Préparer les options audio et sous-titres
+        audio_option = (
+            f"--audio={','.join(map(str, audio_tracks))}" if audio_tracks else ""
+        )
+        subtitle_option = (
+            f"--subtitle={','.join(map(str, subtitle_tracks))}"
+            if subtitle_tracks
+            else ""
+        )
+        burn_option = (
+            f"--subtitle-burned={burn_track}" if burn_track is not None else ""
+        )
+
+        # Construire la commande complète comme celle qui a fonctionné
+        handbrake_cmd = [
+            "HandBrakeCLI",
+            "--preset-import-file",
+            fichier_presets,
+            "-i",
+            fichier,
+            "-o",
+            chemin_sortie,
+            "--preset",
+            preset,
+        ]
+
+        # Ajouter les options audio et sous-titres si disponibles
+        if audio_option:
+            handbrake_cmd.append(audio_option)
+        if subtitle_option:
+            handbrake_cmd.append(subtitle_option)
+        if burn_option:
+            handbrake_cmd.append(burn_option)
+
+        # Ajouter les paramètres d'encodage audio qui ont fonctionné précédemment
+        handbrake_cmd.extend(["--aencoder=aac", "--ab=192", "--mixdown=5point1"])
+
+        logger.info(f"Exécution de la commande: {' '.join(handbrake_cmd)}")
+
+        # Exécuter HandBrake
+        process = subprocess.Popen(
+            handbrake_cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            text=True,
+        )
+
+        # Traiter la sortie de HandBrake pour suivre la progression
+        # [Code de suivi de progression existant...]
+
+    except Exception as e:
+        logger.error(f"Erreur pendant l'encodage: {str(e)}")
+
+
+def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
     """
-    Traite les fichiers d'encodage en vérifiant les dossiers, en ajoutant les fichiers à la file d'attente
-    et en affichant les informations de progression.
-
-    Arguments:
-    file_encodage -- Queue pour la file d'attente d'encodage.
+    Fonction qui traite la file d'attente des fichiers à encoder
+    Avec support pour l'interface graphique
     """
-    logger.info("Démarrage du thread de traitement des fichiers d'encodage")
-    verifier_dossiers()
-    with tqdm(
-        total=0,
-        position=1,
-        leave=False,
-        desc="Files en attente",
-        bar_format="{desc}: {n_fmt}",
-    ) as pbar_queue:
-        while True:
-            try:
-                # Mettre à jour la barre de progression avec le nombre de fichiers en attente
-                pbar_queue.total = file_encodage.qsize()
-                pbar_queue.refresh()
+    logger = setup_logger(__name__)
+    logger.info("Thread de traitement de la file d'encodage démarré")
 
-                # Obtenir le prochain fichier de la file d'attente
-                dossier, fichier, preset = file_encodage.get()
-                logger.info(
-                    f"Fichier extrait de la file: {fichier} avec preset {preset}"
-                )
+    while True:
+        # Vérifier si on doit arrêter complètement
+        if control_flags and control_flags.get("stop_all", False):
+            logger.info("Arrêt de tous les encodages demandé")
+            control_flags["stop_all"] = False
+            # Envoyer un signal pour mettre à jour l'interface
+            if signals:
+                signals.encoding_done.emit()
+                signals.update_queue.emit([])
+            time.sleep(1)
+            continue
 
-                # Récupérer uniquement le nom du fichier à partir du chemin complet
-                nom_fichier = os.path.basename(fichier)
-                # Tronquer le nom du fichier pour l'affichage
-                short_fichier = tronquer_nom_fichier(nom_fichier)
+        # Attendre qu'un fichier soit disponible dans la file
+        if file_encodage.empty():
+            time.sleep(1)
+            continue
 
-                with console_lock:
-                    print(
-                        f"\n{horodatage()} 🔄 Traitement du fichier en cours: {short_fichier} dans le dossier {dossier}"
-                    )
-                # Lancer l'encodage du fichier
-                lancer_encodage(dossier, fichier, preset, file_encodage)
-                # Marquer la tâche comme terminée
-                file_encodage.task_done()
-                # Mettre à jour la barre de progression avec le nombre de fichiers restants en attente
-                pbar_queue.total = file_encodage.qsize()
-                pbar_queue.refresh()
-                logger.info(f"Fichiers restants en attente: {file_encodage.qsize()}")
-            except Exception as e:
-                logger.error(
-                    f"Erreur dans le thread de traitement: {str(e)}", exc_info=True
-                )
-                with console_lock:
-                    print(f"\n{horodatage()} ❌ Une erreur s'est produite: {str(e)}")
-                # Marquer la tâche comme terminée pour éviter de bloquer la file
-                file_encodage.task_done()
+        # Extraire le prochain fichier à traiter
+        tache = file_encodage.get()
+
+        if isinstance(tache, dict):
+            fichier = tache.get("file")
+            preset = tache.get("preset")
+            dossier = tache.get("folder", "")
+        else:
+            # Fallback au cas où c'est un tuple
+            fichier = tache[0] if len(tache) > 0 else ""
+            preset = tache[1] if len(tache) > 1 else ""
+            dossier = ""
+
+        # Mettre à jour la file d'attente dans l'interface
+        if signals and hasattr(signals, "update_queue"):
+            queue_items = []
+            if not file_encodage.empty():
+                queue_items = list(file_encodage.queue)
+            signals.update_queue.emit(queue_items)
+
+        # Encodage avec gestion GUI
+        logger.info(f"Début de l'encodage de {fichier} avec le preset {preset}")
+        lancer_encodage_avec_gui(fichier, preset, dossier, signals, control_flags)
+        logger.info(f"Encodage de {fichier} terminé")

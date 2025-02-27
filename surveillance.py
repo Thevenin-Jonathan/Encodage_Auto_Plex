@@ -21,7 +21,9 @@ def obtenir_fichiers(dossier):
     return fichiers
 
 
-def surveille_dossiers(dossiers_presets, file_encodage):
+def surveille_dossiers(
+    dossiers_presets, file_encodage, signals=None, control_flags=None
+):
     """
     Surveille les dossiers spécifiés et ajoute les nouveaux fichiers détectés
     à la file d'attente d'encodage. La fonction ignore les fichiers déjà encodés
@@ -30,6 +32,8 @@ def surveille_dossiers(dossiers_presets, file_encodage):
     Arguments:
     dossiers_presets -- Dictionnaire contenant les dossiers à surveiller et leurs presets associés.
     file_encodage -- Queue pour la file d'attente d'encodage.
+    signals -- Les signaux pour mettre à jour l'interface graphique.
+    control_flags -- Les drapeaux de contrôle.
     """
     logger.info(f"Démarrage de la surveillance sur {len(dossiers_presets)} dossier(s)")
 
@@ -73,17 +77,40 @@ def surveille_dossiers(dossiers_presets, file_encodage):
                             fichiers_detectes[dossier] = []
                         fichiers_detectes[dossier].append(fichier)
 
-                        # Ajouter le fichier à la file d'attente s'il n'a pas déjà été encodé
-                        if fichier not in fichiers_encodes.get(dossier, []):
-                            file_encodage.put((dossier, fichier, preset))
-                            if dossier not in fichiers_encodes:
-                                fichiers_encodes[dossier] = []
-                            fichiers_encodes[dossier].append(fichier)
-                            print(
-                                f"{horodatage()} 📥 Fichier ajouté à la file d'attente d'encodage: {fichier}"
-                            )
-                            logger.info(
-                                f"Fichier {fichier} ajouté à la file d'encodage avec preset {preset}"
+                        # Ajouter un délai après la détection d'un fichier
+                        logger.info(
+                            f"Attente de 5 secondes pour s'assurer que le fichier est bien disponible..."
+                        )
+                        time.sleep(5)
+
+                        # Vérifier si le fichier est toujours accessible
+                        if os.path.exists(fichier) and os.access(fichier, os.R_OK):
+                            # Ajouter le fichier à la file d'attente s'il n'a pas déjà été encodé
+                            if fichier not in fichiers_encodes.get(dossier, []):
+                                file_encodage.put(
+                                    {
+                                        "folder": dossier,
+                                        "file": fichier,
+                                        "preset": preset,
+                                    }
+                                )
+                                if dossier not in fichiers_encodes:
+                                    fichiers_encodes[dossier] = []
+                                fichiers_encodes[dossier].append(fichier)
+                                print(
+                                    f"{horodatage()} 📥 Fichier ajouté à la file d'attente d'encodage: {fichier}"
+                                )
+                                logger.info(
+                                    f"Fichier {fichier} ajouté à la file d'encodage avec preset {preset}"
+                                )
+                                # Mettre à jour l'interface graphique
+                                if signals:
+                                    # Créer une copie temporaire de la queue pour l'affichage
+                                    queue_items = list(file_encodage.queue)
+                                    signals.update_queue.emit(queue_items)
+                        else:
+                            logger.error(
+                                f"Le fichier {fichier} n'est plus accessible, ignoré"
                             )
 
                 # Traiter les fichiers supprimés détectés
