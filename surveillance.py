@@ -3,6 +3,9 @@ import time
 from file_handling import charger_fichiers, sauvegarder_fichiers
 from constants import debug_mode, fichier_encodes, fichier_sauvegarde, extensions
 from utils import horodatage
+from logger import setup_logger
+
+logger = setup_logger(__name__)
 
 
 def obtenir_fichiers(dossier):
@@ -28,74 +31,90 @@ def surveille_dossiers(dossiers_presets, file_encodage):
     dossiers_presets -- Dictionnaire contenant les dossiers à surveiller et leurs presets associés.
     file_encodage -- Queue pour la file d'attente d'encodage.
     """
-    # Charger les fichiers détectés et encodés à partir des fichiers de sauvegarde
-    fichiers_detectes = charger_fichiers(fichier_sauvegarde)
-    fichiers_encodes = charger_fichiers(fichier_encodes)
+    logger.info(f"Démarrage de la surveillance sur {len(dossiers_presets)} dossier(s)")
 
-    # Obtenir la liste initiale des fichiers dans chaque dossier
-    fichiers_initiaux = {
-        dossier: obtenir_fichiers(dossier) for dossier in dossiers_presets
-    }
+    try:
+        # Charger les fichiers détectés et encodés à partir des fichiers de sauvegarde
+        fichiers_detectes = charger_fichiers(fichier_sauvegarde)
+        fichiers_encodes = charger_fichiers(fichier_encodes)
 
-    print(f"{horodatage()} 🔍 Surveillance initiale des dossiers terminée.")
+        # Obtenir la liste initiale des fichiers dans chaque dossier
+        fichiers_initiaux = {
+            dossier: obtenir_fichiers(dossier) for dossier in dossiers_presets
+        }
 
-    while True:
-        for dossier, preset in dossiers_presets.items():
-            # Obtenir la liste actuelle des fichiers dans le dossier
-            fichiers_actuels = obtenir_fichiers(dossier)
-            # Déterminer les nouveaux fichiers et les fichiers supprimés
-            nouveaux_fichiers = fichiers_actuels - fichiers_initiaux[dossier]
-            fichiers_supprimes = fichiers_initiaux[dossier] - fichiers_actuels
+        print(f"{horodatage()} 🔍 Surveillance initiale des dossiers terminée.")
 
-            # Traiter les nouveaux fichiers détectés
-            if nouveaux_fichiers:
-                for fichier in nouveaux_fichiers:
-                    # Vérifier si le fichier se termine par l'une des extensions encodées
-                    if any(fichier.endswith(f"_encoded{ext}") for ext in extensions):
-                        # Ignorer les fichiers déjà encodés
-                        continue
-                    if debug_mode:
-                        print(
-                            f"{horodatage()} 🆕 Nouveau fichier détecté dans {dossier}: {fichier}"
+        while True:
+            for dossier, preset in dossiers_presets.items():
+                # Obtenir la liste actuelle des fichiers dans le dossier
+                fichiers_actuels = obtenir_fichiers(dossier)
+                # Déterminer les nouveaux fichiers et les fichiers supprimés
+                nouveaux_fichiers = fichiers_actuels - fichiers_initiaux[dossier]
+                fichiers_supprimes = fichiers_initiaux[dossier] - fichiers_actuels
+
+                # Traiter les nouveaux fichiers détectés
+                if nouveaux_fichiers:
+                    for fichier in nouveaux_fichiers:
+                        # Vérifier si le fichier se termine par l'une des extensions encodées
+                        if any(
+                            fichier.endswith(f"_encoded{ext}") for ext in extensions
+                        ):
+                            # Ignorer les fichiers déjà encodés
+                            continue
+                        if debug_mode:
+                            print(
+                                f"{horodatage()} 🆕 Nouveau fichier détecté dans {dossier}: {fichier}"
+                            )
+                        logger.info(
+                            f"Nouveau fichier détecté: {fichier} dans {dossier}"
                         )
-                    if dossier not in fichiers_detectes:
-                        fichiers_detectes[dossier] = []
-                    fichiers_detectes[dossier].append(fichier)
+                        if dossier not in fichiers_detectes:
+                            fichiers_detectes[dossier] = []
+                        fichiers_detectes[dossier].append(fichier)
 
-                    # Ajouter le fichier à la file d'attente s'il n'a pas déjà été encodé
-                    if fichier not in fichiers_encodes.get(dossier, []):
-                        file_encodage.put((dossier, fichier, preset))
-                        if dossier not in fichiers_encodes:
-                            fichiers_encodes[dossier] = []
-                        fichiers_encodes[dossier].append(fichier)
-                        print(
-                            f"{horodatage()} 📥 Fichier ajouté à la file d'attente d'encodage: {fichier}"
-                        )
+                        # Ajouter le fichier à la file d'attente s'il n'a pas déjà été encodé
+                        if fichier not in fichiers_encodes.get(dossier, []):
+                            file_encodage.put((dossier, fichier, preset))
+                            if dossier not in fichiers_encodes:
+                                fichiers_encodes[dossier] = []
+                            fichiers_encodes[dossier].append(fichier)
+                            print(
+                                f"{horodatage()} 📥 Fichier ajouté à la file d'attente d'encodage: {fichier}"
+                            )
+                            logger.info(
+                                f"Fichier {fichier} ajouté à la file d'encodage avec preset {preset}"
+                            )
 
-            # Traiter les fichiers supprimés détectés
-            if fichiers_supprimes:
-                for fichier in fichiers_supprimes:
-                    if debug_mode:
-                        print(
-                            f"{horodatage()} 🗑️ Fichier supprimé dans {dossier}: {fichier}"
-                        )
-                    if (
-                        dossier in fichiers_detectes
-                        and fichier in fichiers_detectes[dossier]
-                    ):
-                        fichiers_detectes[dossier].remove(fichier)
-                    if (
-                        dossier in fichiers_encodes
-                        and fichier in fichiers_encodes[dossier]
-                    ):
-                        fichiers_encodes[dossier].remove(fichier)
+                # Traiter les fichiers supprimés détectés
+                if fichiers_supprimes:
+                    for fichier in fichiers_supprimes:
+                        if debug_mode:
+                            print(
+                                f"{horodatage()} 🗑️ Fichier supprimé dans {dossier}: {fichier}"
+                            )
+                        if (
+                            dossier in fichiers_detectes
+                            and fichier in fichiers_detectes[dossier]
+                        ):
+                            fichiers_detectes[dossier].remove(fichier)
+                        if (
+                            dossier in fichiers_encodes
+                            and fichier in fichiers_encodes[dossier]
+                        ):
+                            fichiers_encodes[dossier].remove(fichier)
 
-            # Mettre à jour la liste des fichiers initialement détectés pour le prochain cycle
-            fichiers_initiaux[dossier] = fichiers_actuels
+                # Mettre à jour la liste des fichiers initialement détectés pour le prochain cycle
+                fichiers_initiaux[dossier] = fichiers_actuels
 
-        # Sauvegarder l'état actuel des fichiers détectés et encodés
-        sauvegarder_fichiers(fichier_sauvegarde, fichiers_detectes)
-        sauvegarder_fichiers(fichier_encodes, fichiers_encodes)
+            # Sauvegarder l'état actuel des fichiers détectés et encodés
+            sauvegarder_fichiers(fichier_sauvegarde, fichiers_detectes)
+            sauvegarder_fichiers(fichier_encodes, fichiers_encodes)
 
-        # Attendre avant le prochain cycle de surveillance
-        time.sleep(10)
+            # Attendre avant le prochain cycle de surveillance
+            time.sleep(10)
+    except Exception as e:
+        logger.error(
+            f"Erreur dans la surveillance des dossiers: {str(e)}", exc_info=True
+        )
+        raise
