@@ -42,3 +42,13 @@ def setup_logger(name):
     logger.addHandler(file_handler)
 
     return logger
+
+
+def colored_log(logger, message, level="INFO", color=None):
+    """Ajoute un log avec une couleur personnalisée"""
+    # Créer un LogRecord avec un attribut custom_color
+    record = logger.makeRecord(
+        logger.name, getattr(logging, level), "", 0, message, None, None
+    )
+    record.custom_color = color
+    logger.handle(record)

@@ -19,29 +19,18 @@ from PyQt5.QtGui import QIcon, QFont
 
 
 class LogHandler(QObject, logging.Handler):
-    log_signal = pyqtSignal(str, str)
+    log_signal = pyqtSignal(str, str, str)  # message, level, custom_color
 
-    def __init__(self, level=logging.NOTSET):
-        QObject.__init__(self)
-        logging.Handler.__init__(self, level)
-        self.lock = None  # Sera initialisé par createLock
-        self.createLock()
-        self.flushOnClose = False  # Désactive le flush à la fermeture
-
-    def createLock(self):
-        self.lock = RLock()
-
-    def acquire(self):
-        if self.lock:
-            self.lock.acquire()
-
-    def release(self):
-        if self.lock:
-            self.lock.release()
+    def __init__(self):
+        super().__init__()
+        logging.Handler.__init__(self)
+        self.flushOnClose = False
 
     def emit(self, record):
         msg = self.format(record) if self.formatter else record.getMessage()
-        self.log_signal.emit(msg, record.levelname)
+        # Vérifier si le message contient une indication de couleur personnalisée
+        custom_color = getattr(record, "custom_color", None)
+        self.log_signal.emit(msg, record.levelname, custom_color)
 
 
 class EncodingStatusWidget(QFrame):
@@ -180,8 +169,8 @@ class MainWindow(QMainWindow):
         # self.queue_action = QAction("File d'attente (0)", self)
         # file_menu.addAction(self.queue_action)
 
-    def add_log(self, message, level="INFO"):
-        """Ajoute un message dans la zone de logs avec coloration selon le niveau"""
+    def add_log(self, message, level="INFO", custom_color=None):
+        """Ajoute un message dans la zone de logs avec coloration selon le niveau ou personnalisée"""
         color_map = {
             "DEBUG": "gray",
             "INFO": "black",
@@ -189,7 +178,8 @@ class MainWindow(QMainWindow):
             "ERROR": "red",
             "CRITICAL": "darkred",
         }
-        color = color_map.get(level, "black")
+        # Utiliser la couleur personnalisée si fournie, sinon celle du niveau
+        color = custom_color if custom_color else color_map.get(level, "black")
         self.log_text.append(f"<span style='color:{color};'>{message}</span>")
         # Auto-scroll to bottom
         sb = self.log_text.verticalScrollBar()

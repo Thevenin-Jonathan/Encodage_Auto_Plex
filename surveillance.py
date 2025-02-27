@@ -3,7 +3,7 @@ import time
 from file_handling import charger_fichiers, sauvegarder_fichiers
 from constants import debug_mode, fichier_encodes, fichier_sauvegarde, extensions
 from utils import horodatage
-from logger import setup_logger
+from logger import colored_log, setup_logger
 
 logger = setup_logger(__name__)
 
@@ -66,12 +66,11 @@ def surveille_dossiers(
                         ):
                             # Ignorer les fichiers déjà encodés
                             continue
-                        if debug_mode:
-                            print(
-                                f"{horodatage()} 🆕 Nouveau fichier détecté dans {dossier}: {fichier}"
-                            )
-                        logger.info(
-                            f"Nouveau fichier détecté: {fichier} dans {dossier}"
+                        colored_log(
+                            logger,
+                            f"Nouveau fichier détecté: {fichier} dans {dossier}",
+                            "INFO",
+                            "blue",
                         )
                         if dossier not in fichiers_detectes:
                             fichiers_detectes[dossier] = []

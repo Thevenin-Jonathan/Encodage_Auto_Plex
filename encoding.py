@@ -23,7 +23,7 @@ from notifications import (
     notifier_encodage_termine,
     notifier_erreur_encodage,
 )
-from logger import setup_logger
+from logger import colored_log, setup_logger
 
 # Configuration du logger
 logger = setup_logger(__name__)
@@ -171,7 +171,12 @@ def lancer_encodage_avec_gui(
         while True:
             # Vérifier si l'encodage doit être interrompu
             if control_flags and control_flags.get("stop_all", False):
-                logger.info(f"Arrêt de l'encodage demandé pour {short_fichier}")
+                colored_log(
+                    logger,
+                    f"Arrêt de l'encodage demandé pour {short_fichier}",
+                    "INFO",
+                    "red",
+                )
                 process.terminate()
                 if signals:
                     signals.encoding_done.emit()
@@ -243,8 +248,11 @@ def lancer_encodage_avec_gui(
         if process.returncode == 0:
             if os.path.exists(chemin_sortie):
                 taille = os.path.getsize(chemin_sortie) / (1024 * 1024)  # En MB
-                logger.info(
-                    f"Fichier encodé avec succès: {chemin_sortie} ({taille:.2f} MB)"
+                colored_log(
+                    logger,
+                    f"Fichier encodé avec succès: {chemin_sortie} ({taille:.2f} MB)",
+                    "INFO",
+                    "green",
                 )
             else:
                 logger.warning(f"Le fichier encodé n'a pas été trouvé: {chemin_sortie}")
@@ -279,7 +287,7 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
     while True:
         # Vérifier si on doit arrêter complètement
         if control_flags and control_flags.get("stop_all", False):
-            logger.info("Arrêt de tous les encodages demandé")
+            colored_log(logger, "Arrêt de tous les encodages demandé", "INFO", "red")
             control_flags["stop_all"] = False
             # Envoyer un signal pour mettre à jour l'interface
             if signals:
