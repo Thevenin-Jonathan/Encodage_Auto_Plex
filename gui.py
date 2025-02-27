@@ -201,6 +201,11 @@ class MainWindow(QMainWindow):
     def update_queue(self, queue_files):
         """Met à jour la liste des encodages en attente"""
         self.queue_text.clear()
+
+        # Mettre à jour le nombre de fichiers dans le menu (toujours le faire, même si vide)
+        queue_count = len(queue_files)
+        self.update_queue_count_in_menu(queue_count)
+
         if not queue_files:
             self.queue_text.append("Aucun fichier en attente")
             return
@@ -220,10 +225,6 @@ class MainWindow(QMainWindow):
                 preset = "Preset inconnu"
 
             self.queue_text.append(f"{i}. {filename} - {preset}")
-
-        # Mettre à jour le nombre de fichiers dans le menu
-        queue_count = len(queue_files)
-        self.update_queue_count_in_menu(queue_count)
 
     def update_queue_count_in_menu(self, count):
         # Mettre à jour l'action dans un menu existant
