@@ -35,7 +35,9 @@ def surveille_dossiers(
     signals -- Les signaux pour mettre à jour l'interface graphique.
     control_flags -- Les drapeaux de contrôle.
     """
-    logger.info(f"Démarrage de la surveillance sur {len(dossiers_presets)} dossier(s)")
+    logger.info(
+        f"✅ Démarrage de la surveillance sur {len(dossiers_presets)} dossier(s)"
+    )
 
     try:
         # Charger les fichiers détectés et encodés à partir des fichiers de sauvegarde

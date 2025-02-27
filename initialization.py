@@ -30,7 +30,7 @@ def vider_fichiers():
             else:
                 print(f"Le fichier {fichier} n'existe pas.")
 
-        logger.info("Nettoyage des fichiers temporaires terminé")
+        logger.info("✅ Nettoyage des fichiers temporaires terminé")
     except Exception as e:
         logger.error(f"Erreur lors du nettoyage des fichiers: {str(e)}", exc_info=True)
         raise
