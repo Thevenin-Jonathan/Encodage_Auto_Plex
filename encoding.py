@@ -67,8 +67,6 @@ def lancer_encodage_avec_gui(
     fichier_sortie = f"{base_nom}_encoded.mkv"  # Toujours utiliser .mkv comme extension
     chemin_sortie = normaliser_chemin(os.path.join(dossier_sortie, fichier_sortie))
 
-    logger.info(f"Fichier de sortie sera enregistré à: {chemin_sortie}")
-
     # Mettre à jour le chemin de sortie dans l'interface si disponible
     if signals and hasattr(signals, "update_output_path"):
         signals.update_output_path.emit(chemin_sortie)
@@ -92,7 +90,6 @@ def lancer_encodage_avec_gui(
         start_time = time.time()
 
         # Analyse des pistes du fichier
-        logger.debug(f"Récupération des informations de pistes pour {fichier}")
         info_pistes = obtenir_pistes(fichier)
         if info_pistes is None:
             logger.error(
@@ -101,14 +98,12 @@ def lancer_encodage_avec_gui(
             return False
 
         # Sélection des pistes audio selon le preset
-        logger.debug(f"Sélection des pistes audio pour {fichier} avec preset {preset}")
         audio_tracks = selectionner_pistes_audio(info_pistes, preset)
         if audio_tracks is None:
             logger.warning(f"Pas de piste audio française disponibles.")
             return False
 
         # Sélection des sous-titres selon le preset
-        logger.debug(f"Sélection des sous-titres pour {fichier} avec preset {preset}")
         subtitle_tracks, burn_track = selectionner_sous_titres(info_pistes, preset)
 
         # Préparer les options audio et sous-titres
@@ -150,8 +145,8 @@ def lancer_encodage_avec_gui(
         # Ajouter les paramètres d'encodage audio
         handbrake_cmd.extend(["--aencoder=aac", "--ab=192", "--mixdown=5point1"])
 
-        logger.info(f"Exécution de la commande: {' '.join(handbrake_cmd)}")
         if debug_mode:
+            logger.info(f"Exécution de la commande: {' '.join(handbrake_cmd)}")
             print(f"{horodatage()} 🔧 Commande d'encodage : {' '.join(handbrake_cmd)}")
 
         # Exécuter HandBrake
@@ -264,7 +259,6 @@ def lancer_encodage_avec_gui(
         # Vérifier le résultat
         process.wait()
         if process.returncode == 0:
-            logger.info(f"Encodage terminé avec succès pour {short_fichier}")
             if os.path.exists(chemin_sortie):
                 taille = os.path.getsize(chemin_sortie) / (1024 * 1024)  # En MB
                 logger.info(
@@ -340,4 +334,3 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
         # Encodage avec gestion GUI
         logger.info(f"Début de l'encodage de {fichier} avec le preset {preset}")
         lancer_encodage_avec_gui(fichier, preset, dossier, signals, control_flags)
-        logger.info(f"Encodage de {fichier} terminé")

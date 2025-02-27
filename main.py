@@ -1,3 +1,4 @@
+import logging
 from queue import Queue
 from threading import Thread
 import sys
@@ -41,11 +42,14 @@ def main():
     # Configuration du gestionnaire de logs pour l'interface graphique
     log_handler = LogHandler()
     log_handler.log_signal.connect(window.add_log)
-    logger.addHandler(log_handler)
+
+    # Ajouter le handler au logger racine pour capturer tous les logs
+    root_logger = logging.getLogger()
+    root_logger.addHandler(log_handler)
 
     # Fonction de nettoyage pour éviter l'erreur à la fermeture
     def cleanup():
-        logger.removeHandler(log_handler)
+        root_logger.removeHandler(log_handler)
 
     # Connecter la fonction de nettoyage à la fermeture de l'application
     app.aboutToQuit.connect(cleanup)
