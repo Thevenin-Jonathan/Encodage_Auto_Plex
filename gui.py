@@ -15,8 +15,10 @@ from PyQt5.QtWidgets import (
     QLabel,
     QFrame,
     QListWidget,
+    QSplitter,
+    QToolButton,
 )
-from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtGui import QIcon, QFont
 
 
@@ -104,6 +106,44 @@ class EncodingStatusWidget(QFrame):
         self.layout().addWidget(self.output_path_label)
 
 
+class LogsPanel(QWidget):
+    """Widget pour afficher les logs dans un panneau latéral"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        # Layout principal
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # En-tête avec titre et bouton de fermeture
+        header_layout = QHBoxLayout()
+
+        log_label = QLabel("Logs:")
+        log_label.setFont(QFont("Arial", 10, QFont.Bold))
+        header_layout.addWidget(log_label)
+
+        header_layout.addStretch()
+
+        self.close_button = QToolButton()
+        self.close_button.setText("×")
+        self.close_button.setToolTip("Masquer les logs")
+        self.close_button.setStyleSheet("QToolButton { font-size: 16px; }")
+        header_layout.addWidget(self.close_button)
+
+        layout.addLayout(header_layout)
+
+        # Zone de texte pour les logs
+        self.log_text = QTextEdit()
+        self.log_text.setReadOnly(True)
+        self.log_text.setLineWrapMode(QTextEdit.NoWrap)
+        self.log_text.setFont(QFont("Consolas", 9))
+        layout.addWidget(self.log_text)
+
+        # Définir une largeur minimale pour le panneau
+        self.setMinimumWidth(400)
+
+
 class MainWindow(QMainWindow):
     """Fenêtre principale de l'application"""
 
@@ -112,20 +152,25 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Encodage Auto Plex")
         self.resize(1400, 800)
 
-        # Widget central
-        central_widget = QWidget()
-        main_layout = QVBoxLayout(central_widget)
+        # Créer un splitter comme widget central
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.setCentralWidget(self.splitter)
 
-        # Zone de logs
-        log_label = QLabel("Logs:")
-        log_label.setFont(QFont("Arial", 10, QFont.Bold))
-        main_layout.addWidget(log_label)
+        # Widget principal pour le contenu (côté gauche)
+        self.main_content = QWidget()
+        main_layout = QVBoxLayout(self.main_content)
+        main_layout.setContentsMargins(9, 9, 9, 9)  # Marges standard
 
-        self.log_text = QTextEdit()
-        self.log_text.setReadOnly(True)
-        self.log_text.setLineWrapMode(QTextEdit.NoWrap)
-        self.log_text.setFont(QFont("Consolas", 9))
-        main_layout.addWidget(self.log_text)
+        # Ajouter un bouton pour afficher/masquer les logs dans le coin supérieur droit
+        top_bar = QHBoxLayout()
+        top_bar.addStretch()
+
+        self.show_logs_button = QPushButton("Afficher logs")
+        self.show_logs_button.setToolTip("Afficher/masquer le panneau de logs")
+        self.show_logs_button.clicked.connect(self.toggle_logs_panel)
+        top_bar.addWidget(self.show_logs_button)
+
+        main_layout.addLayout(top_bar)
 
         # Informations sur l'encodage en cours
         encoding_label = QLabel("Encodage en cours:")
@@ -135,7 +180,7 @@ class MainWindow(QMainWindow):
         self.encoding_status = EncodingStatusWidget()
         main_layout.addWidget(self.encoding_status)
 
-        # NOUVEAU: Ajouter les boutons de contrôle juste après la barre de chargement
+        # Boutons de contrôle juste après la barre de chargement
         control_buttons_layout = QHBoxLayout()
 
         self.pause_button = QPushButton("Pause")
@@ -153,7 +198,7 @@ class MainWindow(QMainWindow):
 
         main_layout.addLayout(control_buttons_layout)
 
-        # Ensuite, section de la file d'attente
+        # Section de la file d'attente
         self.queue_label = QLabel("File d'attente (0):")
         self.queue_label.setFont(QFont("Arial", 10, QFont.Bold))
         main_layout.addWidget(self.queue_label)
@@ -194,14 +239,26 @@ class MainWindow(QMainWindow):
 
         manual_buttons_layout.addWidget(self.refresh_manual_btn)
         manual_buttons_layout.addWidget(self.delete_selected_btn)
-        manual_buttons_layout.addWidget(
-            self.locate_file_btn
-        )  # Ajouter le nouveau bouton
+        manual_buttons_layout.addWidget(self.locate_file_btn)
         manual_buttons_layout.addWidget(self.delete_all_btn)
 
         main_layout.addLayout(manual_buttons_layout)
 
-        self.setCentralWidget(central_widget)
+        # Ajouter le contenu principal au splitter
+        self.splitter.addWidget(self.main_content)
+
+        # Créer le panneau de logs (côté droit)
+        self.logs_panel = LogsPanel()
+        self.logs_panel.close_button.clicked.connect(self.hide_logs_panel)
+
+        # Ajouter le panneau de logs au splitter (initialement caché)
+        self.splitter.addWidget(self.logs_panel)
+
+        # Définir les tailles initiales des widgets dans le splitter
+        self.splitter.setSizes([1, 0])  # Le panneau de logs est initialement masqué
+
+        # Stocker l'état du panneau de logs
+        self.logs_panel_visible = False
 
         # Ou ajout d'une action dans un menu existant
         # file_menu = menubar.addMenu("Fichier")
@@ -210,6 +267,28 @@ class MainWindow(QMainWindow):
 
         # Charger les encodages manuels au démarrage
         self.load_manual_encodings()
+
+    def toggle_logs_panel(self):
+        """Affiche ou masque le panneau de logs"""
+        if self.logs_panel_visible:
+            self.hide_logs_panel()
+        else:
+            self.show_logs_panel()
+
+    def show_logs_panel(self):
+        """Affiche le panneau de logs"""
+        # Calculer les nouvelles tailles pour le splitter
+        total_width = self.splitter.width()
+        new_sizes = [int(total_width * 0.7), int(total_width * 0.3)]
+        self.splitter.setSizes(new_sizes)
+        self.logs_panel_visible = True
+        self.show_logs_button.setText("Masquer logs")
+
+    def hide_logs_panel(self):
+        """Masque le panneau de logs"""
+        self.splitter.setSizes([1, 0])
+        self.logs_panel_visible = False
+        self.show_logs_button.setText("Afficher logs")
 
     def add_log(self, message, level="INFO", custom_color=None):
         """Ajoute un message dans la zone de logs avec coloration selon le niveau ou personnalisée"""
@@ -222,9 +301,14 @@ class MainWindow(QMainWindow):
         }
         # Utiliser la couleur personnalisée si fournie, sinon celle du niveau
         color = custom_color if custom_color else color_map.get(level, "black")
-        self.log_text.append(f"<span style='color:{color};'>{message}</span>")
+
+        # Ajouter le message au panneau de logs
+        self.logs_panel.log_text.append(
+            f"<span style='color:{color};'>{message}</span>"
+        )
+
         # Auto-scroll to bottom
-        sb = self.log_text.verticalScrollBar()
+        sb = self.logs_panel.log_text.verticalScrollBar()
         sb.setValue(sb.maximum())
 
     def update_queue(self, queue_files):
