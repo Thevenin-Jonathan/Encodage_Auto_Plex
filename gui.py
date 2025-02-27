@@ -110,7 +110,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Encodage Auto Plex")
-        self.resize(800, 600)
+        self.resize(1400, 800)
 
         # Widget central
         central_widget = QWidget()
@@ -215,7 +215,7 @@ class MainWindow(QMainWindow):
         """Ajoute un message dans la zone de logs avec coloration selon le niveau ou personnalisée"""
         color_map = {
             "DEBUG": "gray",
-            "INFO": "black",
+            "INFO": "white",
             "WARNING": "orange",
             "ERROR": "red",
             "CRITICAL": "darkred",
