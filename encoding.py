@@ -24,6 +24,7 @@ from notifications import (
     notifier_erreur_encodage,
 )
 from logger import colored_log, setup_logger
+import psutil  # Ajouter cet import au début du fichier
 
 # Configuration du logger
 logger = setup_logger(__name__)
@@ -158,6 +159,10 @@ def lancer_encodage_avec_gui(
             text=True,
         )
 
+        # Variables pour le suivi de la mise en pause
+        is_paused = False
+        proc_obj = None
+
         # Variables pour suivre la progression
         last_percent_complete = -1
         percent_pattern = re.compile(r"Encoding:.*?(\d+\.\d+)\s?%")
@@ -171,6 +176,12 @@ def lancer_encodage_avec_gui(
         while True:
             # Vérifier si l'encodage doit être interrompu
             if control_flags and control_flags.get("stop_all", False):
+                # Si le processus est en pause, le reprendre d'abord
+                if is_paused and proc_obj:
+                    try:
+                        proc_obj.resume()
+                    except:
+                        pass
                 colored_log(
                     logger,
                     f"Arrêt de l'encodage demandé pour {short_fichier}",
@@ -184,6 +195,12 @@ def lancer_encodage_avec_gui(
 
             # Vérifier si l'encodage doit être sauté
             if control_flags and control_flags.get("skip", False):
+                # Si le processus est en pause, le reprendre d'abord
+                if is_paused and proc_obj:
+                    try:
+                        proc_obj.resume()
+                    except:
+                        pass
                 logger.info(f"Saut de l'encodage demandé pour {short_fichier}")
                 process.terminate()
                 control_flags["skip"] = False
@@ -191,57 +208,92 @@ def lancer_encodage_avec_gui(
                     signals.encoding_done.emit()
                 return False
 
-            # Gérer la pause
-            while control_flags and control_flags.get("pause", False):
-                time.sleep(0.5)  # Attendre pendant la pause
+            # Gérer la pause - modification majeure ici
+            if control_flags and control_flags.get("pause", False):
+                if not is_paused:
+                    # Mettre en pause le processus HandBrakeCLI
+                    try:
+                        if proc_obj is None:
+                            proc_obj = psutil.Process(process.pid)
+                        proc_obj.suspend()
+                        is_paused = True
+                        colored_log(
+                            logger,
+                            f"Encodage mis en pause pour {short_fichier}",
+                            "INFO",
+                            "orange",
+                        )
+                    except Exception as e:
+                        logger.error(f"Erreur lors de la mise en pause: {str(e)}")
+            elif is_paused and proc_obj:
+                # Reprendre le processus si on était en pause
+                try:
+                    proc_obj.resume()
+                    is_paused = False
+                    colored_log(
+                        logger, f"Encodage repris pour {short_fichier}", "INFO", "green"
+                    )
+                except Exception as e:
+                    logger.error(f"Erreur lors de la reprise: {str(e)}")
 
-            # Lire la sortie
-            output = process.stdout.readline()
-            if output == "" and process.poll() is not None:
-                break
+            # Lire la sortie seulement si le processus n'est pas en pause
+            if not is_paused:
+                output = process.stdout.readline()
+                if output == "" and process.poll() is not None:
+                    break
 
-            if output:
-                if debug_mode:
-                    print(output.strip())
+                if output:
+                    if debug_mode:
+                        print(output.strip())
 
-                # Extraire le pourcentage d'avancement
-                match = percent_pattern.search(output)
-                if match:
-                    percent_complete = float(match.group(1))
-                    if percent_complete != last_percent_complete:
-                        last_percent_complete = percent_complete
+                    # Extraire le pourcentage d'avancement
+                    match = percent_pattern.search(output)
+                    if match:
+                        percent_complete = float(match.group(1))
+                        if percent_complete != last_percent_complete:
+                            last_percent_complete = percent_complete
 
-                        # Mettre à jour la barre de progression
-                        if signals and hasattr(signals, "update_progress"):
-                            signals.update_progress.emit(int(percent_complete))
+                            # Mettre à jour la barre de progression
+                            if signals and hasattr(signals, "update_progress"):
+                                signals.update_progress.emit(int(percent_complete))
 
-                        # Calculer le temps écoulé et restant
-                        elapsed = time.time() - start_time
-                        elapsed_str = f"{int(elapsed // 3600)}h{int((elapsed % 3600) // 60)}m{int(elapsed % 60)}s"
+                            # Calculer le temps écoulé et restant
+                            elapsed = time.time() - start_time
+                            elapsed_str = f"{int(elapsed // 3600)}h{int((elapsed % 3600) // 60)}m{int(elapsed % 60)}s"
 
-                        # Estimer le temps restant
-                        if percent_complete > 0:
-                            remaining = (
-                                elapsed * (100 - percent_complete) / percent_complete
-                            )
-                            remaining_str = f"{int(remaining // 3600)}h{int((remaining % 3600) // 60)}m{int(remaining % 60)}s"
-                        else:
-                            remaining_str = "Calcul en cours..."
+                            # Estimer le temps restant
+                            if percent_complete > 0:
+                                remaining = (
+                                    elapsed
+                                    * (100 - percent_complete)
+                                    / percent_complete
+                                )
+                                remaining_str = f"{int(remaining // 3600)}h{int((remaining % 3600) // 60)}m{int(remaining % 60)}s"
+                            else:
+                                remaining_str = "Calcul en cours..."
 
-                        # Mettre à jour les infos de temps
-                        if signals and hasattr(signals, "update_time_info"):
-                            signals.update_time_info.emit(elapsed_str, remaining_str)
+                            # Mettre à jour les infos de temps
+                            if signals and hasattr(signals, "update_time_info"):
+                                signals.update_time_info.emit(
+                                    elapsed_str, remaining_str
+                                )
 
-                # Extraire les informations d'encodage (fps)
-                fps_match = fps_pattern.search(output)
-                if fps_match:
-                    current_fps = fps_match.group(1)
+                    # Extraire les informations d'encodage (fps)
+                    fps_match = fps_pattern.search(output)
+                    if fps_match:
+                        current_fps = fps_match.group(1)
 
-                # Seulement mettre à jour l'interface si on a de nouvelles informations
-                if fps_match:
-                    # Mettre à jour les statistiques d'encodage
-                    if signals and hasattr(signals, "update_encoding_stats"):
-                        signals.update_encoding_stats.emit(current_fps)
+                    # Seulement mettre à jour l'interface si on a de nouvelles informations
+                    if fps_match:
+                        # Mettre à jour les statistiques d'encodage
+                        if signals and hasattr(signals, "update_encoding_stats"):
+                            signals.update_encoding_stats.emit(current_fps)
+            else:
+                # En pause, juste attendre un peu
+                time.sleep(0.5)
+                # Vérifier si le processus est toujours en vie
+                if process.poll() is not None:
+                    break
 
         # Vérifier le résultat
         process.wait()
