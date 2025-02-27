@@ -54,3 +54,6 @@ fichier_encodage_manuel = os.path.join(BASE_PATH, "Encodage_manuel.txt")
 
 # Taille maximal des messages de notifications windows
 maxsize_message = 70
+
+# État par défaut des notifications Windows (True = activées, False = désactivées)
+notifications_enabled_default = True

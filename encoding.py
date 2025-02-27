@@ -55,7 +55,7 @@ def normaliser_chemin(chemin):
 
 
 def lancer_encodage_avec_gui(
-    fichier, preset, dossier, signals=None, control_flags=None
+    fichier, preset, dossier, signals=None, control_flags=None, file_encodage=None
 ):
     logger = setup_logger(__name__)
 
@@ -77,9 +77,13 @@ def lancer_encodage_avec_gui(
     if signals and hasattr(signals, "update_file_info"):
         signals.update_file_info.emit(short_fichier, preset)
 
+    # Envoyer une notification de lancement d'encodage
+    notifier_encodage_lancement(short_fichier, file_encodage)
+
     # Vérifier si le fichier existe et est accessible
     if not os.path.exists(fichier) or not os.access(fichier, os.R_OK):
         logger.error(f"Le fichier {fichier} n'existe pas ou n'est pas accessible")
+        notifier_erreur_encodage(short_fichier)
         return False
 
     # Vérifier si le fichier a déjà été encodé
@@ -333,12 +337,18 @@ def lancer_encodage_avec_gui(
                 # Rafraîchir l'historique des encodages dans l'interface
                 if signals and hasattr(signals, "refresh_history"):
                     signals.refresh_history.emit()
+                # Envoyer une notification de fin d'encodage
+                notifier_encodage_termine(short_fichier, file_encodage)
             else:
                 logger.warning(f"Le fichier encodé n'a pas été trouvé: {chemin_sortie}")
+                # Envoyer une notification d'erreur d'encodage
+                notifier_erreur_encodage(short_fichier)
         else:
             logger.error(
                 f"Échec de l'encodage pour {nom_fichier} avec code de retour {process.returncode}"
             )
+            # Envoyer une notification d'erreur d'encodage
+            notifier_erreur_encodage(short_fichier)
 
         # Signaler la fin de l'encodage
         if signals and hasattr(signals, "encoding_done"):
@@ -402,4 +412,6 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
 
         # Encodage avec gestion GUI
         logger.info(f"Début de l'encodage de {fichier} avec le preset {preset}")
-        lancer_encodage_avec_gui(fichier, preset, dossier, signals, control_flags)
+        lancer_encodage_avec_gui(
+            fichier, preset, dossier, signals, control_flags, file_encodage
+        )

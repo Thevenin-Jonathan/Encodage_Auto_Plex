@@ -20,10 +20,12 @@ from PyQt5.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QHeaderView,
+    QCheckBox,
 )
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtGui import QIcon, QFont
 from successful_encodings import get_recent_encodings
+from constants import notifications_enabled_default
 
 
 class LogHandler(QObject, logging.Handler):
@@ -266,6 +268,15 @@ class MainWindow(QMainWindow):
         )
         self.show_history_button.clicked.connect(self.toggle_history_panel)
         top_bar.addWidget(self.show_history_button)
+
+        # Checkbox pour activer/désactiver les notifications Windows
+        self.notifications_checkbox = QCheckBox("Notifications Windows")
+        self.notifications_checkbox.setToolTip(
+            "Activer/désactiver les notifications Windows"
+        )
+        self.notifications_checkbox.setChecked(notifications_enabled_default)
+        self.notifications_checkbox.stateChanged.connect(self.toggle_notifications)
+        top_bar.addWidget(self.notifications_checkbox)
 
         top_bar.addStretch()
 
@@ -616,6 +627,18 @@ class MainWindow(QMainWindow):
             self.load_manual_encodings()
         except Exception as e:
             self.add_log(f"Erreur lors de la suppression: {str(e)}", "ERROR")
+
+    def toggle_notifications(self, state):
+        """Active ou désactive les notifications Windows"""
+        from notifications import set_notifications_enabled
+
+        # Mettre à jour l'état des notifications
+        notifications_enabled = state == Qt.Checked
+        set_notifications_enabled(notifications_enabled)
+
+        # Ajouter un message dans les logs
+        status = "activées" if notifications_enabled else "désactivées"
+        self.add_log(f"Notifications Windows {status}", "INFO", "green")
 
     def locate_selected_file(self):
         """Ouvre l'explorateur à l'emplacement du fichier sélectionné"""
