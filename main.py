@@ -6,6 +6,7 @@ import sys
 import os
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import pyqtSignal, QObject
+from PyQt5.QtGui import QIcon  # Ajoutez cette importation
 import qdarkstyle  # Ajouter cet import en haut du fichier
 
 from surveillance import surveille_dossiers
@@ -14,6 +15,12 @@ from constants import dossiers_presets
 from initialization import vider_fichiers
 from logger import setup_logger
 from gui import MainWindow, LogHandler
+
+# Définir le chemin de base en fonction de l'exécution en tant que script ou exécutable
+if hasattr(sys, "_MEIPASS"):
+    BASE_PATH = sys._MEIPASS
+else:
+    BASE_PATH = os.path.dirname(__file__)
 
 
 # Fonction pour vérifier si HandBrakeCLI est installé
@@ -52,6 +59,9 @@ class EncodingSignals(QObject):
 def main():
     # Créer l'application Qt
     app = QApplication(sys.argv)
+    # Définir l'icône de l'application (affecte toutes les fenêtres)
+    app_icon = QIcon(os.path.join(BASE_PATH, "images/ico.ico"))
+    app.setWindowIcon(app_icon)
 
     # Appliquer le thème sombre avec des boutons plus hauts
     base_style = qdarkstyle.load_stylesheet_pyqt5()
