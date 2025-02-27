@@ -77,12 +77,10 @@ class EncodingStatusWidget(QFrame):
         self.progress_bar.setValue(0)
         layout.addWidget(self.progress_bar)
 
-        # FPS et taille
+        # FPS
         info_layout = QHBoxLayout()
         self.fps_label = QLabel("FPS: -")
-        self.size_label = QLabel("Taille: - / -")
         info_layout.addWidget(self.fps_label)
-        info_layout.addWidget(self.size_label)
         layout.addLayout(info_layout)
 
         self.setLayout(layout)
@@ -98,9 +96,8 @@ class EncodingStatusWidget(QFrame):
         self.elapsed_label.setText(f"Temps écoulé: {elapsed}")
         self.remaining_label.setText(f"Temps restant: {remaining}")
 
-    def update_encoding_stats(self, fps, current_size, estimated_size):
+    def update_encoding_stats(self, fps):
         self.fps_label.setText(f"FPS: {fps}")
-        self.size_label.setText(f"Taille: {current_size} / {estimated_size}")
 
     def clear(self):
         self.file_label.setText("Aucun encodage en cours")
@@ -109,7 +106,6 @@ class EncodingStatusWidget(QFrame):
         self.remaining_label.setText("Temps restant: --:--:--")
         self.progress_bar.setValue(0)
         self.fps_label.setText("FPS: -")
-        self.size_label.setText("Taille: - / -")
 
     def show_output_path(self, path):
         """Affiche le chemin du fichier de sortie"""

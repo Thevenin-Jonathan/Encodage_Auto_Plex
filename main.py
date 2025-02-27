@@ -19,9 +19,7 @@ class EncodingSignals(QObject):
     update_progress = pyqtSignal(int)  # pourcentage de progression
     update_file_info = pyqtSignal(str, str)  # filename, preset
     update_time_info = pyqtSignal(str, str)  # elapsed, remaining
-    update_encoding_stats = pyqtSignal(
-        str, str, str
-    )  # fps, current_size, estimated_size
+    update_encoding_stats = pyqtSignal(str)  # fps
     encoding_done = pyqtSignal()  # signal quand l'encodage est terminé
     update_queue = pyqtSignal(list)  # liste des fichiers en attente
     update_output_path = pyqtSignal(str)  # chemin du fichier de sortie

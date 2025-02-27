@@ -162,13 +162,10 @@ def lancer_encodage_avec_gui(
         last_percent_complete = -1
         percent_pattern = re.compile(r"Encoding:.*?(\d+\.\d+)\s?%")
         fps_pattern = re.compile(r"(\d+\.\d+) fps")
-        time_pattern = re.compile(r"ETA (\d+h\d+m\d+s)")
-        size_pattern = re.compile(r"size: (\d+\.\d+ [KMG]B)")
 
         # Initialiser percent_complete avant utilisation
         percent_complete = 0
         current_fps = "0.0"
-        current_size = "0.0 MB"
 
         # Gérer la sortie du processus en continue
         while True:
@@ -230,31 +227,16 @@ def lancer_encodage_avec_gui(
                         if signals and hasattr(signals, "update_time_info"):
                             signals.update_time_info.emit(elapsed_str, remaining_str)
 
-                # Extraire les informations d'encodage (fps, taille)
+                # Extraire les informations d'encodage (fps)
                 fps_match = fps_pattern.search(output)
                 if fps_match:
                     current_fps = fps_match.group(1)
 
-                size_match = size_pattern.search(output)
-                if size_match:
-                    current_size = size_match.group(1)
-
                 # Seulement mettre à jour l'interface si on a de nouvelles informations
-                if fps_match or size_match:
-                    # Estimer la taille finale en fonction du pourcentage actuel
-                    estimated_size = "Calcul en cours..."
-                    if percent_complete > 0 and size_match:
-                        size_value = float(current_size.split()[0])
-                        size_unit = current_size.split()[1]
-                        estimated_size = (
-                            f"{(size_value * 100 / percent_complete):.2f} {size_unit}"
-                        )
-
+                if fps_match:
                     # Mettre à jour les statistiques d'encodage
                     if signals and hasattr(signals, "update_encoding_stats"):
-                        signals.update_encoding_stats.emit(
-                            current_fps, current_size, estimated_size
-                        )
+                        signals.update_encoding_stats.emit(current_fps)
 
         # Vérifier le résultat
         process.wait()
