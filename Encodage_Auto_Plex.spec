@@ -1,12 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
-
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
 a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=[],
-    datas=[('datas', 'datas')],
-    hiddenimports=[],
+    datas=[('datas', 'datas')] + collect_data_files('plyer'),
+    hiddenimports=['plyer.platforms', 'plyer.platforms.win', 'plyer.platforms.win.notification'] + collect_submodules('plyer'),
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
