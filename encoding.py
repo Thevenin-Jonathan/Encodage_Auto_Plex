@@ -6,6 +6,7 @@ import time
 from tqdm import tqdm
 from audio_selection import selectionner_pistes_audio
 from subtitle_selection import selectionner_sous_titres
+from successful_encodings import record_successful_encoding
 from constants import (
     dossier_sortie,
     debug_mode,
@@ -327,6 +328,11 @@ def lancer_encodage_avec_gui(
                     "INFO",
                     "green",
                 )
+                # Enregistrer l'encodage réussi pour l'historique
+                record_successful_encoding(chemin_sortie, taille)
+                # Rafraîchir l'historique des encodages dans l'interface
+                if signals and hasattr(signals, "refresh_history"):
+                    signals.refresh_history.emit()
             else:
                 logger.warning(f"Le fichier encodé n'a pas été trouvé: {chemin_sortie}")
         else:

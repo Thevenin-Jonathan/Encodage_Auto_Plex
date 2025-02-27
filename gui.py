@@ -17,9 +17,13 @@ from PyQt5.QtWidgets import (
     QListWidget,
     QSplitter,
     QToolButton,
+    QTableWidget,
+    QTableWidgetItem,
+    QHeaderView,
 )
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtGui import QIcon, QFont
+from successful_encodings import get_recent_encodings
 
 
 class LogHandler(QObject, logging.Handler):
@@ -109,6 +113,94 @@ class EncodingStatusWidget(QFrame):
         self.layout().addWidget(self.output_path_label)
 
 
+class EncodingsHistoryPanel(QWidget):
+    """Widget pour afficher l'historique des encodages réussis dans un panneau latéral"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        # Layout principal
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # En-tête avec titre et bouton de fermeture
+        header_layout = QHBoxLayout()
+
+        history_label = QLabel("Encodages réussis (72h):")
+        history_label.setFont(QFont("Arial", 10, QFont.Bold))
+        header_layout.addWidget(history_label)
+
+        header_layout.addStretch()
+
+        self.close_button = QToolButton()
+        self.close_button.setText("×")
+        self.close_button.setToolTip("Masquer l'historique")
+        self.close_button.setStyleSheet("QToolButton { font-size: 16px; }")
+        header_layout.addWidget(self.close_button)
+
+        layout.addLayout(header_layout)
+
+        # Tableau pour les encodages réussis
+        self.encodings_table = QTableWidget()
+        self.encodings_table.setColumnCount(3)
+        self.encodings_table.setHorizontalHeaderLabels(["Heure", "Fichier", "Taille"])
+        self.encodings_table.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
+        self.encodings_table.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.Stretch
+        )
+        self.encodings_table.horizontalHeader().setSectionResizeMode(
+            2, QHeaderView.ResizeToContents
+        )
+        self.encodings_table.setAlternatingRowColors(True)
+        self.encodings_table.setEditTriggers(
+            QTableWidget.NoEditTriggers
+        )  # Lecture seule
+        layout.addWidget(self.encodings_table)
+
+        # Définir une largeur minimale pour le panneau
+        self.setMinimumWidth(400)
+
+    def load_recent_encodings(self):
+        """Charge et affiche les encodages réussis des dernières 72 heures"""
+        # Effacer le tableau
+        self.encodings_table.setRowCount(0)
+
+        # Récupérer les encodages récents
+        recent_encodings = get_recent_encodings(72)
+
+        if not recent_encodings:
+            # Ajouter une ligne indiquant qu'il n'y a pas d'encodages récents
+            self.encodings_table.setRowCount(1)
+            item = QTableWidgetItem("Aucun encodage récent")
+            item.setTextAlignment(Qt.AlignCenter)
+            self.encodings_table.setSpan(0, 0, 1, 3)  # Fusionner les cellules
+            self.encodings_table.setItem(0, 0, item)
+            return
+
+        # Remplir le tableau avec les encodages récents
+        self.encodings_table.setRowCount(len(recent_encodings))
+
+        for row, encoding in enumerate(recent_encodings):
+            # Heure de l'encodage
+            time_item = QTableWidgetItem(
+                encoding.get("datetime", "").split()[1]
+            )  # Juste l'heure
+            time_item.setTextAlignment(Qt.AlignCenter)
+            self.encodings_table.setItem(row, 0, time_item)
+
+            # Nom du fichier
+            filename_item = QTableWidgetItem(encoding.get("filename", ""))
+            self.encodings_table.setItem(row, 1, filename_item)
+
+            # Taille du fichier
+            size_mb = encoding.get("file_size", 0)
+            size_item = QTableWidgetItem(f"{size_mb:.2f} MB")
+            size_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.encodings_table.setItem(row, 2, size_item)
+
+
 class LogsPanel(QWidget):
     """Widget pour afficher les logs dans un panneau latéral"""
 
@@ -164,10 +256,20 @@ class MainWindow(QMainWindow):
         main_layout = QVBoxLayout(self.main_content)
         main_layout.setContentsMargins(9, 9, 9, 9)  # Marges standard
 
-        # Ajouter un bouton pour afficher/masquer les logs dans le coin supérieur droit
+        # Barre supérieure avec boutons pour les panneaux latéraux
         top_bar = QHBoxLayout()
+
+        # Bouton pour afficher/masquer l'historique des encodages (à gauche)
+        self.show_history_button = QPushButton("Historique encodages")
+        self.show_history_button.setToolTip(
+            "Afficher/masquer l'historique des encodages réussis"
+        )
+        self.show_history_button.clicked.connect(self.toggle_history_panel)
+        top_bar.addWidget(self.show_history_button)
+
         top_bar.addStretch()
 
+        # Bouton pour afficher/masquer les logs (à droite)
         self.show_logs_button = QPushButton("Afficher logs")
         self.show_logs_button.setToolTip("Afficher/masquer le panneau de logs")
         self.show_logs_button.clicked.connect(self.toggle_logs_panel)
@@ -250,17 +352,23 @@ class MainWindow(QMainWindow):
         # Ajouter le contenu principal au splitter
         self.splitter.addWidget(self.main_content)
 
+        # Créer le panneau d'historique des encodages (côté gauche)
+        self.history_panel = EncodingsHistoryPanel()
+        self.history_panel.close_button.clicked.connect(self.hide_history_panel)
+
         # Créer le panneau de logs (côté droit)
         self.logs_panel = LogsPanel()
         self.logs_panel.close_button.clicked.connect(self.hide_logs_panel)
 
-        # Ajouter le panneau de logs au splitter (initialement caché)
-        self.splitter.addWidget(self.logs_panel)
+        # Ajouter les panneaux au splitter (initialement cachés)
+        self.splitter.insertWidget(0, self.history_panel)  # Ajouter à gauche
+        self.splitter.addWidget(self.logs_panel)  # Ajouter à droite
 
         # Définir les tailles initiales des widgets dans le splitter
-        self.splitter.setSizes([1, 0])  # Le panneau de logs est initialement masqué
+        self.splitter.setSizes([0, 1, 0])  # Les deux panneaux sont initialement masqués
 
-        # Stocker l'état du panneau de logs
+        # Stocker l'état des panneaux
+        self.history_panel_visible = False
         self.logs_panel_visible = False
 
         # Ou ajout d'une action dans un menu existant
@@ -282,14 +390,81 @@ class MainWindow(QMainWindow):
         """Affiche le panneau de logs"""
         # Calculer les nouvelles tailles pour le splitter
         total_width = self.splitter.width()
-        new_sizes = [int(total_width * 0.7), int(total_width * 0.3)]
+        if self.history_panel_visible:
+            # Si le panneau d'historique est visible, ajuster les tailles
+            new_sizes = [
+                int(total_width * 0.25),
+                int(total_width * 0.5),
+                int(total_width * 0.25),
+            ]
+        else:
+            # Sinon, juste afficher le panneau de logs à droite
+            new_sizes = [0, int(total_width * 0.7), int(total_width * 0.3)]
+
         self.splitter.setSizes(new_sizes)
         self.logs_panel_visible = True
         self.show_logs_button.setText("Masquer logs")
 
+    def toggle_history_panel(self):
+        """Affiche ou masque le panneau d'historique des encodages"""
+        if self.history_panel_visible:
+            self.hide_history_panel()
+        else:
+            self.show_history_panel()
+
+    def show_history_panel(self):
+        """Affiche le panneau d'historique des encodages"""
+        # Charger les encodages récents
+        self.refresh_history_panel()
+
+        # Calculer les nouvelles tailles pour le splitter
+        total_width = self.splitter.width()
+        if self.logs_panel_visible:
+            # Si le panneau de logs est visible, ajuster les tailles
+            new_sizes = [
+                int(total_width * 0.25),
+                int(total_width * 0.5),
+                int(total_width * 0.25),
+            ]
+        else:
+            # Sinon, juste afficher le panneau d'historique à gauche
+            new_sizes = [int(total_width * 0.3), int(total_width * 0.7), 0]
+
+        self.splitter.setSizes(new_sizes)
+        self.history_panel_visible = True
+        self.show_history_button.setText("Masquer historique")
+
+    def hide_history_panel(self):
+        """Masque le panneau d'historique des encodages"""
+        current_sizes = self.splitter.sizes()
+        if self.logs_panel_visible:
+            # Si le panneau de logs est visible, ajuster pour ne garder que le contenu principal et les logs
+            self.splitter.setSizes(
+                [0, current_sizes[1] + current_sizes[0], current_sizes[2]]
+            )
+        else:
+            # Sinon, tout donner au contenu principal
+            self.splitter.setSizes([0, sum(current_sizes), 0])
+
+        self.history_panel_visible = False
+        self.show_history_button.setText("Historique encodages")
+
+    def refresh_history_panel(self):
+        """Rafraîchit le panneau d'historique des encodages avec les données récentes"""
+        self.history_panel.load_recent_encodings()
+
     def hide_logs_panel(self):
         """Masque le panneau de logs"""
-        self.splitter.setSizes([1, 0])
+        current_sizes = self.splitter.sizes()
+        if self.history_panel_visible:
+            # Si le panneau d'historique est visible, ajuster pour ne garder que le contenu principal et l'historique
+            self.splitter.setSizes(
+                [current_sizes[0], current_sizes[1] + current_sizes[2], 0]
+            )
+        else:
+            # Sinon, tout donner au contenu principal
+            self.splitter.setSizes([0, sum(current_sizes), 0])
+
         self.logs_panel_visible = False
         self.show_logs_button.setText("Afficher logs")
 

@@ -27,6 +27,9 @@ class EncodingSignals(QObject):
     update_manual_encodings = (
         pyqtSignal()
     )  # signal pour mettre à jour la liste des encodages manuels
+    refresh_history = (
+        pyqtSignal()
+    )  # signal pour rafraîchir l'historique des encodages réussis
 
 
 # Point d'entrée principal
@@ -76,6 +79,7 @@ def main():
     signals.encoding_done.connect(window.encoding_status.clear)
     signals.update_queue.connect(window.update_queue)
     signals.update_manual_encodings.connect(window.load_manual_encodings)
+    signals.refresh_history.connect(window.refresh_history_panel)
 
     # File d'attente pour les encodages
     file_encodage = Queue()
