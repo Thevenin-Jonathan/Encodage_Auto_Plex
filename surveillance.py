@@ -77,11 +77,11 @@ def surveille_dossiers(
                             fichiers_detectes[dossier] = []
                         fichiers_detectes[dossier].append(fichier)
 
-                        # Ajouter un délai après la détection d'un fichier
-                        logger.info(
-                            f"Attente de 5 secondes pour s'assurer que le fichier est bien disponible..."
-                        )
-                        time.sleep(5)
+                        # # Ajouter un délai après la détection d'un fichier
+                        # logger.info(
+                        #     f"Attente de 5 secondes pour s'assurer que le fichier est bien disponible..."
+                        # )
+                        # time.sleep(5)
 
                         # Vérifier si le fichier est toujours accessible
                         if os.path.exists(fichier) and os.access(fichier, os.R_OK):
