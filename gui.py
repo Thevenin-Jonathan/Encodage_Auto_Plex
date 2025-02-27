@@ -147,10 +147,9 @@ class MainWindow(QMainWindow):
         self.encoding_status = EncodingStatusWidget()
         main_layout.addWidget(self.encoding_status)
 
-        # Liste des encodages en attente
-        queue_label = QLabel("File d'attente:")
-        queue_label.setFont(QFont("Arial", 10, QFont.Bold))
-        main_layout.addWidget(queue_label)
+        self.queue_label = QLabel("File d'attente (0):")
+        self.queue_label.setFont(QFont("Arial", 10, QFont.Bold))
+        main_layout.addWidget(self.queue_label)
 
         self.queue_text = QTextEdit()
         self.queue_text.setReadOnly(True)
@@ -179,6 +178,11 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
+        # Ou ajout d'une action dans un menu existant
+        # file_menu = menubar.addMenu("Fichier")
+        # self.queue_action = QAction("File d'attente (0)", self)
+        # file_menu.addAction(self.queue_action)
+
     def add_log(self, message, level="INFO"):
         """Ajoute un message dans la zone de logs avec coloration selon le niveau"""
         color_map = {
@@ -194,14 +198,14 @@ class MainWindow(QMainWindow):
         sb = self.log_text.verticalScrollBar()
         sb.setValue(sb.maximum())
 
-    def update_queue(self, queue_items):
+    def update_queue(self, queue_files):
         """Met à jour la liste des encodages en attente"""
         self.queue_text.clear()
-        if not queue_items:
+        if not queue_files:
             self.queue_text.append("Aucun fichier en attente")
             return
 
-        for i, item in enumerate(queue_items, 1):
+        for i, item in enumerate(queue_files, 1):
             if isinstance(item, dict):
                 # Si l'élément est un dictionnaire
                 filename = os.path.basename(item.get("file", "Inconnu"))
@@ -216,6 +220,23 @@ class MainWindow(QMainWindow):
                 preset = "Preset inconnu"
 
             self.queue_text.append(f"{i}. {filename} - {preset}")
+
+        # Mettre à jour le nombre de fichiers dans le menu
+        queue_count = len(queue_files)
+        self.update_queue_count_in_menu(queue_count)
+
+    def update_queue_count_in_menu(self, count):
+        # Mettre à jour l'action dans un menu existant
+        if hasattr(self, "queue_action"):
+            self.queue_action.setText(f"File d'attente ({count})")
+
+        # Mettre à jour le label dans l'interface principale
+        if hasattr(self, "queue_label"):
+            self.queue_label.setText(f"File d'attente ({count}):")
+
+        # Alternative: mettre à jour dans la barre de statut
+        if hasattr(self, "statusBar"):
+            self.statusBar().showMessage(f"Fichiers en attente: {count}")
 
     def toggle_pause(self):
         """Mettre en pause ou reprendre l'encodage en cours"""
