@@ -106,12 +106,13 @@ def lancer_encodage_avec_gui(
         # Sélection des pistes audio selon le preset
         audio_tracks = selectionner_pistes_audio(info_pistes, preset)
         if audio_tracks is None:
+            reason = "audio"
             logger.warning(
                 f"Pas de piste audio française disponibles pour {nom_fichier}"
             )
             # Ajouter à la liste des encodages manuels avec le preset
             ajouter_fichier_a_liste_encodage_manuel(
-                fichier, nom_fichier, preset, signals
+                fichier, nom_fichier, reason, preset, signals
             )
             # Si des signaux GUI sont disponibles, mettre à jour l'interface
             if signals and hasattr(signals, "encoding_done"):
@@ -121,12 +122,13 @@ def lancer_encodage_avec_gui(
         # Sélection des sous-titres selon le preset
         subtitle_tracks, burn_track = selectionner_sous_titres(info_pistes, preset)
         if subtitle_tracks is None:
+            reason = "subtitle"
             logger.warning(
                 f"Pas de piste de sous-titres compatible pour {nom_fichier} (requis pour {preset})"
             )
             # Ajouter à la liste des encodages manuels avec le preset
             ajouter_fichier_a_liste_encodage_manuel(
-                fichier, nom_fichier, preset, signals
+                fichier, nom_fichier, reason, preset, signals
             )
             # Si des signaux GUI sont disponibles, mettre à jour l'interface
             if signals and hasattr(signals, "encoding_done"):

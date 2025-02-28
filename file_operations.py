@@ -68,7 +68,7 @@ def verifier_dossiers():
 
 
 def ajouter_fichier_a_liste_encodage_manuel(
-    filepath, nom_fichier, preset=None, signals=None
+    filepath, nom_fichier, reason, preset=None, signals=None
 ):
     """
     Ajoute le fichier spécifié et son preset dans la liste d'encodage manuel,
@@ -115,9 +115,16 @@ def ajouter_fichier_a_liste_encodage_manuel(
             )
             return True
 
+        if reason == "audio":
+            reason_text = "pas de piste audio compatible"
+        elif reason == "subtitle":
+            reason_text = "pas de piste de sous-titre compatible"
+        else:
+            reason_text = f"pas de piste {reason} compatible"
+
         colored_log(
             logger,  # Utiliser le logger global
-            f"Ajout de {nom_fichier} à la liste des encodages manuels (pas de piste audio compatible)",
+            f"Ajout de {nom_fichier} à la liste des encodages manuels ({reason_text})",
             "INFO",
             "orange",
         )
