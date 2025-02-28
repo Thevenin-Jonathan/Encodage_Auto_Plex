@@ -9,4 +9,5 @@ datas/fichiers_encodes.json
 *.log
 *.logs
 datas/successful_encodings.json
+datas/config.json
 todo.txt
