@@ -26,6 +26,7 @@ from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtGui import QIcon, QFont
 from successful_encodings import get_recent_encodings
 from constants import notifications_enabled_default
+from config import load_config
 
 
 class LogHandler(QObject, logging.Handler):
@@ -248,6 +249,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Encodage Auto Plex")
         self.resize(1400, 800)
+        config = load_config()
 
         # Créer un splitter comme widget central
         self.splitter = QSplitter(Qt.Horizontal)
@@ -274,7 +276,7 @@ class MainWindow(QMainWindow):
         self.notifications_checkbox.setToolTip(
             "Activer/désactiver les notifications Windows"
         )
-        self.notifications_checkbox.setChecked(notifications_enabled_default)
+        self.notifications_checkbox.setChecked(config["notifications_enabled"])
         self.notifications_checkbox.stateChanged.connect(self.toggle_notifications)
         top_bar.addWidget(self.notifications_checkbox)
 
@@ -631,10 +633,16 @@ class MainWindow(QMainWindow):
     def toggle_notifications(self, state):
         """Active ou désactive les notifications Windows"""
         from notifications import set_notifications_enabled
+        from config import save_config, load_config
 
         # Mettre à jour l'état des notifications
         notifications_enabled = state == Qt.Checked
         set_notifications_enabled(notifications_enabled)
+
+        # Sauvegarder la préférence
+        config = load_config()
+        config["notifications_enabled"] = notifications_enabled
+        save_config(config)
 
         # Ajouter un message dans les logs
         status = "activées" if notifications_enabled else "désactivées"
