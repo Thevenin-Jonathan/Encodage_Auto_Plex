@@ -148,7 +148,9 @@ class EncodingsHistoryPanel(QWidget):
         # Tableau pour les encodages réussis
         self.encodings_table = QTableWidget()
         self.encodings_table.setColumnCount(3)
-        self.encodings_table.setHorizontalHeaderLabels(["Heure", "Fichier", "Taille"])
+        self.encodings_table.setHorizontalHeaderLabels(
+            ["Date/Heure", "Fichier", "Taille"]
+        )
         self.encodings_table.horizontalHeader().setSectionResizeMode(
             0, QHeaderView.ResizeToContents
         )
@@ -162,6 +164,7 @@ class EncodingsHistoryPanel(QWidget):
         self.encodings_table.setEditTriggers(
             QTableWidget.NoEditTriggers
         )  # Lecture seule
+        self.encodings_table.setSortingEnabled(True)  # Activer le tri par colonne
         layout.addWidget(self.encodings_table)
 
         # Définir une largeur minimale pour le panneau
@@ -184,26 +187,42 @@ class EncodingsHistoryPanel(QWidget):
             self.encodings_table.setItem(0, 0, item)
             return
 
+        # Désactiver temporairement le tri pendant le remplissage du tableau
+        self.encodings_table.setSortingEnabled(False)
+
         # Remplir le tableau avec les encodages récents
         self.encodings_table.setRowCount(len(recent_encodings))
 
         for row, encoding in enumerate(recent_encodings):
-            # Heure de l'encodage
-            time_item = QTableWidgetItem(
-                encoding.get("datetime", "").split()[1]
-            )  # Juste l'heure
-            time_item.setTextAlignment(Qt.AlignCenter)
-            self.encodings_table.setItem(row, 0, time_item)
+            # Date et heure de l'encodage
+            datetime_str = encoding.get("datetime", "")
+            timestamp = encoding.get("timestamp", 0)
+
+            # Formater la date et l'heure avec un tiret entre les deux
+            formatted_datetime = datetime_str.replace(" ", " - ")
+
+            # Créer l'élément pour la date/heure
+            datetime_item = QTableWidgetItem(formatted_datetime)
+            datetime_item.setTextAlignment(Qt.AlignCenter)
+            # Stocker le timestamp pour un tri chronologique correct
+            datetime_item.setData(Qt.UserRole, timestamp)
+            self.encodings_table.setItem(row, 0, datetime_item)
 
             # Nom du fichier
-            filename_item = QTableWidgetItem(encoding.get("filename", ""))
+            filename = encoding.get("filename", "")
+            filename_item = QTableWidgetItem(filename)
             self.encodings_table.setItem(row, 1, filename_item)
 
             # Taille du fichier
             size_mb = encoding.get("file_size", 0)
             size_item = QTableWidgetItem(f"{size_mb:.2f} MB")
             size_item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            # Stocker la valeur numérique pour le tri
+            size_item.setData(Qt.UserRole, float(size_mb))
             self.encodings_table.setItem(row, 2, size_item)
+
+        # Réactiver le tri après avoir rempli le tableau
+        self.encodings_table.setSortingEnabled(True)
 
 
 class LogsPanel(QWidget):
