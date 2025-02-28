@@ -124,12 +124,21 @@ def lancer_encodage_avec_gui(
                 signals.encoding_done.emit()
             return False
 
+        # Préparer les options audio
+        audio_option = (
+            f'--audio={",".join(map(str, audio_tracks))}' if audio_tracks else ""
+        )
+
         # Sélection des sous-titres selon le preset
-        subtitle_tracks, burn_track = selectionner_sous_titres(info_pistes, preset)
-        if subtitle_tracks is None:
+        subtitle_tracks, burn_track, force_encodage = selectionner_sous_titres(
+            info_pistes, preset
+        )
+
+        # Vérifier si on doit stopper l'encodage si il y a trop de sous-titres à filtrer
+        if subtitle_tracks is None and force_encodage is False:
             reason = "subtitle"
             logger.warning(
-                f"Pas de piste de sous-titres compatible pour {nom_fichier} (requis pour {preset})"
+                f"Trop de sous-titres à inclure pour {nom_fichier} (requis pour {preset})"
             )
             # Ajouter à la liste des encodages manuels avec le preset
             ajouter_fichier_a_liste_encodage_manuel(
@@ -140,20 +149,26 @@ def lancer_encodage_avec_gui(
                 signals.encoding_done.emit()
             return False
 
-        # Préparer les options audio et sous-titres
-        audio_option = (
-            f'--audio={",".join(map(str, audio_tracks))}' if audio_tracks else ""
-        )
-        subtitle_option = (
-            f'--subtitle={",".join(map(str, subtitle_tracks))}'
-            if subtitle_tracks
-            else ""
-        )
-        burn_option = (
-            f"--subtitle-burned={subtitle_tracks.index(burn_track) + 1}"
-            if burn_track is not None
-            else ""
-        )
+        subtitle_option = None
+        burn_option = None
+
+        if force_encodage:
+            logger.warning(
+                f"Pas de piste de sous-titres en français disponible pour {nom_fichier} (requis pour {preset})"
+            )
+        else:
+            # Préparer les options des sous-titres
+            subtitle_option = (
+                f'--subtitle={",".join(map(str, subtitle_tracks))}'
+                if subtitle_tracks
+                else ""
+            )
+            # Préparer les options des sous-titres forcés
+            burn_option = (
+                f"--subtitle-burned={subtitle_tracks.index(burn_track) + 1}"
+                if burn_track is not None
+                else ""
+            )
 
         # Construire la commande complète
         handbrake_cmd = [

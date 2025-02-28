@@ -51,7 +51,14 @@ criteres_audios = [
 
 # Critères pour les sous-titres
 criteres_sous_titres_burn = ["force"]
-criteres_sous_titres_supprimer = ["sdh", "malentendant", "vfq", "quebec"]
+criteres_sous_titres_supprimer = [
+    "sdh",
+    "malentendant",
+    "vfq",
+    "quebe",
+    "nad",
+    "comment",
+]
 
 # Dossiers pour encodage manuel
 dossier_encodage_manuel = "D:/Torrents/Encodage_manuel"
