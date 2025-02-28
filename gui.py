@@ -161,6 +161,15 @@ class EncodingsHistoryPanel(QWidget):
             2, QHeaderView.ResizeToContents
         )
         self.encodings_table.setAlternatingRowColors(True)
+        # Définir les couleurs alternées pour les lignes du tableau
+        self.encodings_table.setStyleSheet(
+            """
+            QTableView {
+                background-color: #19232d;
+                alternate-background-color: #243240;
+            }
+        """
+        )
         self.encodings_table.setEditTriggers(
             QTableWidget.NoEditTriggers
         )  # Lecture seule
