@@ -60,6 +60,8 @@ fichier_encodage_manuel = os.path.join(BASE_PATH, "Encodage_manuel.txt")
 # Dossier pour l'historique des encodages réussis
 fichier_historique = os.path.join(BASE_PATH, "datas", "successful_encodings.json")
 
+state_file = os.path.join(BASE_PATH, "datas", "interrupted_encodings.json")
+
 # Taille maximal des messages de notifications windows
 maxsize_message = 70
 

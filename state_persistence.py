@@ -2,12 +2,13 @@ import os
 import json
 import logging
 from datetime import datetime
+from constants import state_file
 
 # Configuration du logger
 logger = logging.getLogger(__name__)
 
 # Chemin du fichier de sauvegarde d'état
-state_file = os.path.join(os.path.dirname(__file__), "interrupted_encodings.json")
+STATE_FILE = state_file
 
 
 def save_interrupted_encodings(current_encoding=None, encoding_queue=None):
@@ -49,8 +50,8 @@ def save_interrupted_encodings(current_encoding=None, encoding_queue=None):
 
         # Préparer les données à sauvegarder
         # Charger l'état existant s'il y en a un
-        if os.path.exists(state_file):
-            with open(state_file, "r", encoding="utf-8") as f:
+        if os.path.exists(STATE_FILE):
+            with open(STATE_FILE, "r", encoding="utf-8") as f:
                 state = json.load(f)
         else:
             state = {}
@@ -66,10 +67,10 @@ def save_interrupted_encodings(current_encoding=None, encoding_queue=None):
             "encoding_queue": encoding_queue if encoding_queue else [],
         }
         # Sauvegarder dans un fichier JSON
-        with open(state_file, "w", encoding="utf-8") as f:
+        with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f, ensure_ascii=False, indent=2)
 
-        logger.info(f"Encodages interrompus sauvegardés dans {state_file}")
+        logger.info(f"Encodages interrompus sauvegardés dans {STATE_FILE}")
         return True
 
     except Exception as e:
@@ -91,15 +92,15 @@ def load_interrupted_encodings():
                 "encoding_queue": [{"file": chemin_fichier, "preset": preset, "folder": dossier}, ...]
             }
     """
-    if not os.path.exists(state_file):
+    if not os.path.exists(STATE_FILE):
         logger.info("Aucun fichier d'encodages interrompus trouvé")
         return None
 
     try:
-        with open(state_file, "r", encoding="utf-8") as f:
+        with open(STATE_FILE, "r", encoding="utf-8") as f:
             state = json.load(f)
 
-        logger.info(f"Encodages interrompus chargés depuis {state_file}")
+        logger.info(f"Encodages interrompus chargés depuis {STATE_FILE}")
         return state
 
     except Exception as e:
@@ -114,12 +115,12 @@ def clear_interrupted_encodings():
     Returns:
         bool: True si la suppression a réussi ou si le fichier n'existait pas, False en cas d'erreur.
     """
-    if not os.path.exists(state_file):
+    if not os.path.exists(STATE_FILE):
         return True
 
     try:
-        os.remove(state_file)
-        logger.info(f"Fichier d'encodages interrompus supprimé: {state_file}")
+        os.remove(STATE_FILE)
+        logger.info(f"Fichier d'encodages interrompus supprimé: {STATE_FILE}")
         return True
 
     except Exception as e:
@@ -136,4 +137,4 @@ def has_interrupted_encodings():
     Returns:
         bool: True si un fichier d'encodages interrompus existe, False sinon.
     """
-    return os.path.exists(state_file)
+    return os.path.exists(STATE_FILE)
