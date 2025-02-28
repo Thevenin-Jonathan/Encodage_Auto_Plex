@@ -25,7 +25,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtGui import QIcon, QFont
 from successful_encodings import get_recent_encodings
-from constants import notifications_enabled_default
+from constants import fichier_encodage_manuel
 from config import load_config
 
 
@@ -569,7 +569,7 @@ class MainWindow(QMainWindow):
         """Charge les encodages manuels depuis le fichier"""
         self.manual_list.clear()
         try:
-            with open("Encodage_manuel.txt", "r", encoding="utf-8") as f:
+            with open(fichier_encodage_manuel, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if line:
@@ -591,7 +591,7 @@ class MainWindow(QMainWindow):
 
         try:
             # Lire toutes les lignes
-            with open("Encodage_manuel.txt", "r", encoding="utf-8") as f:
+            with open(fichier_encodage_manuel, "r", encoding="utf-8") as f:
                 lines = f.readlines()
 
             # Filtrer les lignes à conserver
@@ -601,7 +601,7 @@ class MainWindow(QMainWindow):
             ]
 
             # Réécrire le fichier sans les lignes sélectionnées
-            with open("Encodage_manuel.txt", "w", encoding="utf-8") as f:
+            with open(fichier_encodage_manuel, "w", encoding="utf-8") as f:
                 f.writelines(filtered_lines)
 
             self.add_log(
@@ -620,7 +620,7 @@ class MainWindow(QMainWindow):
 
         try:
             # Vider complètement le fichier
-            with open("Encodage_manuel.txt", "w", encoding="utf-8") as f:
+            with open(fichier_encodage_manuel, "w", encoding="utf-8") as f:
                 pass
 
             self.add_log(

@@ -13,6 +13,8 @@ debug_mode = False  # Change cette valeur à True pour activer le mode débogage
 
 config_file = os.path.join(BASE_PATH, "datas", "config.json")
 
+icon_file = os.path.join(BASE_PATH, "images", "ico.ico")
+
 # Dossiers à surveiller et leurs presets HandBrake
 dossiers_presets = {
     "D:/Torrents/Dessins_animes": "Dessins animes FR 1000kbps",
