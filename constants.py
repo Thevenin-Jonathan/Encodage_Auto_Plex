@@ -2,8 +2,9 @@ import sys
 import os
 
 # Définir le chemin de base en fonction de l'exécution en tant que script ou exécutable
-if hasattr(sys, "_MEIPASS"):
-    BASE_PATH = sys._MEIPASS
+if getattr(sys, "frozen", False):
+    # Mode exécutable - utiliser le dossier où se trouve l'exécutable
+    BASE_PATH = os.path.dirname(sys.executable)
 else:
     BASE_PATH = os.path.dirname(__file__)
 
