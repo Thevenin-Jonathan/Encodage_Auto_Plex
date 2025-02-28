@@ -2,6 +2,7 @@ import sys
 import os
 import subprocess
 import logging
+import time
 from threading import RLock
 from PyQt5.QtWidgets import (
     QApplication,
@@ -245,6 +246,9 @@ class LogsPanel(QWidget):
 class MainWindow(QMainWindow):
     """Fenêtre principale de l'application"""
 
+    # Signal pour indiquer que la fenêtre est sur le point d'être fermée
+    closing = pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Encodage Auto Plex")
@@ -391,6 +395,45 @@ class MainWindow(QMainWindow):
 
         # Charger les encodages manuels au démarrage
         self.load_manual_encodings()
+
+        # Référence à la fonction de nettoyage (sera définie par main.py)
+        self.cleanup_function = None
+
+    def set_control_flags(self, flags):
+        """
+        Définit les drapeaux de contrôle pour l'application
+        """
+        self.control_flags = flags
+
+    def set_cleanup_function(self, cleanup_func):
+        """
+        Définit la fonction de nettoyage à appeler lors de la fermeture de la fenêtre
+        """
+        self.cleanup_function = cleanup_func
+
+    def closeEvent(self, event):
+        """
+        Gestionnaire d'événement appelé lorsque la fenêtre est fermée
+        """
+        # Émettre le signal de fermeture
+        self.closing.emit()
+
+        # Signaler la fermeture de l'application aux processus d'encodage
+        if hasattr(self, "control_flags"):
+            self.control_flags["closing"] = True
+            self.control_flags["app_closing"] = True  # Pour compatibilité
+
+        # Attendre un peu pour que les threads puissent s'arrêter proprement
+        import time
+
+        time.sleep(0.5)
+
+        # Appeler la fonction de nettoyage si elle a été définie
+        if self.cleanup_function:
+            self.cleanup_function()
+
+        # Accepter l'événement de fermeture
+        event.accept()
 
     def toggle_logs_panel(self):
         """Affiche ou masque le panneau de logs"""

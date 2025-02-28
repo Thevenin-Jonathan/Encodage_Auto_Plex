@@ -4,6 +4,7 @@ from file_handling import charger_fichiers, sauvegarder_fichiers
 from constants import debug_mode, fichier_encodes, fichier_sauvegarde, extensions
 from utils import horodatage
 from logger import colored_log, setup_logger
+from state_persistence import save_interrupted_encodings
 
 logger = setup_logger(__name__)
 
@@ -109,6 +110,13 @@ def surveille_dossiers(
                                     # Créer une copie temporaire de la queue pour l'affichage
                                     queue_items = list(file_encodage.queue)
                                     signals.update_queue.emit(queue_items)
+
+                                    # Sauvegarder l'état des encodages interrompus
+                                    # L'encodage en cours est None car on vient d'ajouter un fichier à la queue
+                                    save_interrupted_encodings(None, queue_items)
+                                    logger.info(
+                                        "État des encodages sauvegardé après ajout à la file d'attente"
+                                    )
                         else:
                             logger.error(
                                 f"Le fichier {fichier} n'est plus accessible, ignoré"

@@ -7,6 +7,11 @@ from tqdm import tqdm
 from audio_selection import selectionner_pistes_audio
 from subtitle_selection import selectionner_sous_titres
 from successful_encodings import record_successful_encoding
+from state_persistence import (
+    save_interrupted_encodings,
+    clear_interrupted_encodings,
+    load_interrupted_encodings,
+)
 from constants import (
     dossier_sortie,
     debug_mode,
@@ -55,7 +60,7 @@ def normaliser_chemin(chemin):
 
 
 def lancer_encodage_avec_gui(
-    fichier, preset, dossier, signals=None, control_flags=None, file_encodage=None
+    fichier, preset, signals=None, control_flags=None, file_encodage=None
 ):
     logger = setup_logger(__name__)
 
@@ -75,7 +80,7 @@ def lancer_encodage_avec_gui(
 
     # Afficher les informations du fichier dans l'interface
     if signals and hasattr(signals, "update_file_info"):
-        signals.update_file_info.emit(short_fichier, preset)
+        signals.update_file_info.emit(fichier, preset)
 
     # Envoyer une notification de lancement d'encodage
     notifier_encodage_lancement(short_fichier, file_encodage)
@@ -239,6 +244,7 @@ def lancer_encodage_avec_gui(
                 control_flags["skip"] = False
                 if signals:
                     signals.encoding_done.emit()
+                clear_interrupted_encodings()
                 return False
 
             # Gérer la pause - modification majeure ici
@@ -354,6 +360,17 @@ def lancer_encodage_avec_gui(
             logger.error(
                 f"Échec de l'encodage pour {nom_fichier} avec code de retour {process.returncode}"
             )
+            reason = "Erreur ou fermeture pendant l'encodage !"
+            # Vérifier si l'application est en cours de fermeture
+            if control_flags and control_flags.get("closing", False):
+                logger.info(
+                    f"Fermeture de l'application en cours, encodage de {nom_fichier} annulé"
+                )
+            else:
+                # Ajouter à la liste des encodages manuels avec le preset
+                ajouter_fichier_a_liste_encodage_manuel(
+                    fichier, nom_fichier, reason, preset, signals
+                )
             # Envoyer une notification d'erreur d'encodage
             notifier_erreur_encodage(short_fichier)
 
@@ -389,6 +406,8 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
             if signals:
                 signals.encoding_done.emit()
                 signals.update_queue.emit([])
+            # Effacer les encodages interrompus car on a tout arrêté
+            clear_interrupted_encodings()
             time.sleep(1)
             continue
 
@@ -410,15 +429,69 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
             preset = tache[1] if len(tache) > 1 else ""
             dossier = ""
 
+        # Créer un dictionnaire pour l'encodage en cours
+        current_encoding = {"file": fichier, "preset": preset, "folder": dossier}
+
         # Mettre à jour la file d'attente dans l'interface
+        queue_items = []
+
+        # Récupérer les éléments de la file d'attente sans les retirer
+        # Note: Queue.queue est un attribut interne qui peut ne pas être fiable
+        # Nous utilisons une approche plus sûre en créant une copie de la file
+        queue_size = file_encodage.qsize()
+
+        if queue_size > 0:
+            logger.info(f"Récupération de {queue_size} éléments dans la file d'attente")
+            # Créer une liste temporaire pour stocker les éléments
+            temp_items = []
+
+            # Retirer tous les éléments de la file
+            for _ in range(queue_size):
+                if not file_encodage.empty():
+                    item = file_encodage.get()
+                    temp_items.append(item)
+
+            # Remettre les éléments dans la file et les ajouter à notre liste
+            for item in temp_items:
+                file_encodage.put(item)
+                queue_items.append(item)
+
         if signals and hasattr(signals, "update_queue"):
-            queue_items = []
-            if not file_encodage.empty():
-                queue_items = list(file_encodage.queue)
             signals.update_queue.emit(queue_items)
+
+        # Vérifier si le fichier existe avant de lancer l'encodage
+        if not os.path.exists(fichier):
+            logger.error(f"Le fichier {fichier} n'existe pas, encodage ignoré")
+            # Si des signaux GUI sont disponibles, mettre à jour l'interface
+            if signals and hasattr(signals, "encoding_done"):
+                signals.encoding_done.emit()
+            continue
+
+        # Vérifier si l'application est en cours de fermeture
+        if control_flags and control_flags.get("closing", False):
+            logger.info(
+                f"Fermeture de l'application en cours, encodage de {fichier} annulé"
+            )
+        else:
+            # Sauvegarder l'état de l'encodage en cours et de la file d'attente
+            save_interrupted_encodings(current_encoding, queue_items)
 
         # Encodage avec gestion GUI
         logger.info(f"Début de l'encodage de {fichier} avec le preset {preset}")
-        lancer_encodage_avec_gui(
-            fichier, preset, dossier, signals, control_flags, file_encodage
+        logger.info(f"Chemin complet du fichier: {os.path.abspath(fichier)}")
+        result = lancer_encodage_avec_gui(
+            fichier, preset, signals, control_flags, file_encodage
         )
+
+        # Si l'encodage est terminé avec succès, on peut effacer l'état sauvegardé
+        # pour cet encodage spécifique
+        if result:
+            # Mettre à jour les informations sur les encodages en attente
+            if not file_encodage.empty():
+                queue_items = list(file_encodage.queue)
+                save_interrupted_encodings(None, queue_items)
+                logger.info("État des encodages mis à jour (file d'attente uniquement)")
+            else:
+                # Si la file est vide, on peut tout effacer
+                clear_interrupted_encodings()
+                logger.info("État des encodages effacé (aucun encodage en attente)")
