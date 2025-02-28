@@ -28,7 +28,17 @@ def obtenir_pistes(filepath):
     Un dictionnaire contenant les informations des pistes si réussi, None sinon.
     """
     commande = ["HandBrakeCLI", "-i", filepath, "--scan", "--json"]
-    result = subprocess.run(commande, capture_output=True, text=True)
+
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = 0  # SW_HIDE
+    result = subprocess.run(
+        commande,
+        startupinfo=startupinfo,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+        capture_output=True,
+        text=True,
+    )
     if result.returncode != 0:
         print(f"Erreur lors de l'exécution de HandBrakeCLI: {result.stderr}")
         return None

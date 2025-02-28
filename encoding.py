@@ -177,10 +177,15 @@ def lancer_encodage_avec_gui(
             print(f"{horodatage()} 🔧 Commande d'encodage : {' '.join(handbrake_cmd)}")
 
         # Exécuter HandBrake
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo.wShowWindow = 0  # SW_HIDE
         process = subprocess.Popen(
             handbrake_cmd,
+            startupinfo=startupinfo,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
+            creationflags=subprocess.CREATE_NO_WINDOW,
             universal_newlines=True,
             text=True,
         )
