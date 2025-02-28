@@ -4,6 +4,7 @@ import subprocess
 from threading import Thread
 import sys
 import os
+import time
 from PyQt5.QtWidgets import QApplication, QMessageBox
 from PyQt5.QtCore import pyqtSignal, QObject
 from PyQt5.QtGui import QIcon  # Ajoutez cette importation
@@ -19,6 +20,7 @@ from state_persistence import (
     load_interrupted_encodings,
     clear_interrupted_encodings,
     has_interrupted_encodings,
+    save_interrupted_encodings,
 )
 from resume_dialog import RestartEncodingDialog
 
@@ -237,6 +239,39 @@ def main():
         # Effacer les encodages interrompus
         clear_interrupted_encodings()
 
+    # Fonction pour mettre à jour la file d'attente lorsqu'elle est modifiée via l'interface
+    def update_queue_from_gui():
+        if control_flags.get("queue_modified", False):
+            # Récupérer la liste actuelle des fichiers en attente depuis l'interface
+            queue_files = window.get_current_queue_files()
+
+            # Vider la file d'attente actuelle
+            while not file_encodage.empty():
+                file_encodage.get()
+
+            # Remplir la file avec les nouveaux éléments
+            for item in queue_files:
+                file_encodage.put(item)
+
+            # Réinitialiser le flag
+            control_flags["queue_modified"] = False
+
+            # Sauvegarder l'état des encodages en cours
+            current_encoding = current_encoding_info
+            save_interrupted_encodings(current_encoding, queue_files)
+
+            logger.info("File d'attente mise à jour depuis l'interface")
+
+    # Vérifier périodiquement si la file d'attente a été modifiée via l'interface
+    def check_queue_modifications():
+        while not control_flags.get("closing", False):
+            update_queue_from_gui()
+            time.sleep(1)  # Vérifier toutes les secondes
+
+    # Démarrer un thread pour surveiller les modifications de la file d'attente
+    thread_queue_monitor = Thread(target=check_queue_modifications, daemon=True)
+    thread_queue_monitor.start()
+
     window.pause_button.clicked.connect(update_pause_flag)
     window.skip_button.clicked.connect(trigger_skip)
     window.stop_button.clicked.connect(trigger_stop_all)
@@ -390,6 +425,22 @@ def main():
         daemon=True,
     )
     thread_encodage.start()
+
+    # Gérer le cas où l'utilisateur vide complètement la file d'attente
+    def handle_queue_cleared():
+        if control_flags.get("queue_cleared", False):
+            # Vider la file d'attente
+            while not file_encodage.empty():
+                file_encodage.get()
+            # Effacer les encodages interrompus si aucun encodage n'est en cours
+            if current_encoding_info is None:
+                clear_interrupted_encodings()
+            # Réinitialiser le flag
+            control_flags["queue_cleared"] = False
+            logger.info("File d'attente vidée depuis l'interface")
+
+    # Connecter le signal de mise à jour de la file d'attente à notre fonction
+    signals.update_queue.connect(lambda _: handle_queue_cleared())
 
     # Démarrer le thread de surveillance des dossiers
     logger.info(f"Démarrage de la surveillance des dossiers")

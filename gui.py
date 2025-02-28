@@ -22,6 +22,7 @@ from PyQt5.QtWidgets import (
     QTableWidgetItem,
     QHeaderView,
     QCheckBox,
+    QListWidgetItem,
 )
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtGui import QIcon, QFont
@@ -325,10 +326,54 @@ class MainWindow(QMainWindow):
         self.queue_label.setFont(QFont("Arial", 10, QFont.Bold))
         main_layout.addWidget(self.queue_label)
 
-        self.queue_text = QTextEdit()
-        self.queue_text.setReadOnly(True)
-        self.queue_text.setMaximumHeight(100)
-        main_layout.addWidget(self.queue_text)
+        # Remplacer QTextEdit par QListWidget pour permettre la sélection d'éléments
+        self.queue_list = QListWidget()
+        self.queue_list.setMaximumHeight(100)
+        self.queue_list.setSelectionMode(QListWidget.SingleSelection)
+        main_layout.addWidget(self.queue_list)
+
+        # Boutons pour manipuler la file d'attente
+        queue_buttons_layout = QHBoxLayout()
+
+        # Ordre des boutons selon la demande: descendre, monter, supprimer, tout en bas, tout en haut, supprimer tout
+        self.queue_down_btn = QPushButton("Descendre")
+        self.queue_down_btn.setToolTip("Déplacer l'élément sélectionné vers le bas")
+        self.queue_down_btn.clicked.connect(self.move_queue_item_down)
+        queue_buttons_layout.addWidget(self.queue_down_btn)
+
+        self.queue_up_btn = QPushButton("Monter")
+        self.queue_up_btn.setToolTip("Déplacer l'élément sélectionné vers le haut")
+        self.queue_up_btn.clicked.connect(self.move_queue_item_up)
+        queue_buttons_layout.addWidget(self.queue_up_btn)
+
+        self.queue_delete_btn = QPushButton("Supprimer")
+        self.queue_delete_btn.setToolTip(
+            "Supprimer l'élément sélectionné de la file d'attente"
+        )
+        self.queue_delete_btn.clicked.connect(self.delete_queue_item)
+        queue_buttons_layout.addWidget(self.queue_delete_btn)
+
+        self.queue_bottom_btn = QPushButton("Tout en bas")
+        self.queue_bottom_btn.setToolTip(
+            "Déplacer l'élément sélectionné tout en bas de la file"
+        )
+        self.queue_bottom_btn.clicked.connect(self.move_queue_item_to_bottom)
+        queue_buttons_layout.addWidget(self.queue_bottom_btn)
+
+        self.queue_top_btn = QPushButton("Tout en haut")
+        self.queue_top_btn.setToolTip(
+            "Déplacer l'élément sélectionné tout en haut de la file"
+        )
+        self.queue_top_btn.clicked.connect(self.move_queue_item_to_top)
+        queue_buttons_layout.addWidget(self.queue_top_btn)
+
+        self.queue_clear_btn = QPushButton("Supprimer tout")
+        self.queue_clear_btn.setToolTip("Vider la file d'attente")
+        self.queue_clear_btn.setStyleSheet("background-color: #ff6b6b;")
+        self.queue_clear_btn.clicked.connect(self.clear_queue)
+        queue_buttons_layout.addWidget(self.queue_clear_btn)
+
+        main_layout.addLayout(queue_buttons_layout)
 
         # Section des encodages manuels
         self.manual_encodings_label = QLabel("Encodages manuels (0):")
@@ -547,31 +592,292 @@ class MainWindow(QMainWindow):
 
     def update_queue(self, queue_files):
         """Met à jour la liste des encodages en attente"""
-        self.queue_text.clear()
+        self.queue_list.clear()
 
         # Mettre à jour le nombre de fichiers dans le menu (toujours le faire, même si vide)
         queue_count = len(queue_files)
         self.update_queue_count_in_menu(queue_count)
 
         if not queue_files:
-            self.queue_text.append("Aucun fichier en attente")
+            self.queue_list.addItem("Aucun fichier en attente")
+            # Désactiver les boutons de manipulation quand la file est vide
+            self.set_queue_buttons_state(False)
             return
+
+        # Activer les boutons de manipulation
+        self.set_queue_buttons_state(True)
 
         for i, item in enumerate(queue_files, 1):
             if isinstance(item, dict):
                 # Si l'élément est un dictionnaire
                 filename = os.path.basename(item.get("file", "Inconnu"))
                 preset = item.get("preset", "Preset inconnu")
+                # Stocker l'élément original comme userData pour pouvoir le récupérer plus tard
+                list_item = QListWidgetItem(f"{i}. {filename} - {preset}")
+                list_item.setData(Qt.UserRole, item)
             elif isinstance(item, tuple) and len(item) >= 2:
                 # Si l'élément est un tuple
                 filename = os.path.basename(item[0])
                 preset = item[1]
+                list_item = QListWidgetItem(f"{i}. {filename} - {preset}")
+                list_item.setData(Qt.UserRole, item)
             else:
                 # Format inconnu
-                filename = "Format inconnu"
-                preset = "Preset inconnu"
+                list_item = QListWidgetItem("Format inconnu")
+                list_item.setData(Qt.UserRole, item)
 
-            self.queue_text.append(f"{i}. {filename} - {preset}")
+            self.queue_list.addItem(list_item)
+
+    def set_queue_buttons_state(self, enabled):
+        """Active ou désactive les boutons de manipulation de la file d'attente"""
+        self.queue_delete_btn.setEnabled(enabled)
+        self.queue_up_btn.setEnabled(enabled)
+        self.queue_top_btn.setEnabled(enabled)
+        self.queue_down_btn.setEnabled(enabled)
+        self.queue_bottom_btn.setEnabled(enabled)
+        self.queue_clear_btn.setEnabled(enabled)
+
+    def delete_queue_item(self):
+        """Supprime l'élément sélectionné de la file d'attente"""
+        current_row = self.queue_list.currentRow()
+        if current_row == -1:
+            self.add_log(
+                "Aucun élément sélectionné dans la file d'attente", "WARNING", "orange"
+            )
+            return
+
+        # Récupérer la liste actuelle des fichiers en attente
+        queue_files = self.get_current_queue_files()
+
+        # Vérifier si la file contient uniquement le message "Aucun fichier en attente"
+        if (
+            len(queue_files) == 1
+            and self.queue_list.item(0).text() == "Aucun fichier en attente"
+        ):
+            return
+
+        # Supprimer l'élément de la liste
+        if 0 <= current_row < len(queue_files):
+            del queue_files[current_row]
+
+            # Mettre à jour la file d'attente
+            self.update_queue(queue_files)
+
+            # Sélectionner le même index ou le dernier élément si on a supprimé le dernier
+            new_row = min(current_row, self.queue_list.count() - 1)
+            if new_row >= 0:
+                self.queue_list.setCurrentRow(new_row)
+
+            self.add_log(f"Élément supprimé de la file d'attente", "INFO", "green")
+
+            # Signaler le changement de la file d'attente et forcer la mise à jour immédiate
+            if hasattr(self, "control_flags"):
+                self.control_flags["queue_modified"] = True
+                # Forcer la mise à jour immédiate
+                from state_persistence import save_interrupted_encodings
+
+                save_interrupted_encodings(None, queue_files)
+
+    def move_queue_item_up(self):
+        """Déplace l'élément sélectionné vers le haut dans la file d'attente"""
+        current_row = self.queue_list.currentRow()
+        if current_row <= 0:
+            return  # Premier élément ou aucun élément sélectionné
+
+        # Récupérer la liste actuelle des fichiers en attente
+        queue_files = self.get_current_queue_files()
+
+        # Vérifier si la file contient uniquement le message "Aucun fichier en attente"
+        if (
+            len(queue_files) == 1
+            and self.queue_list.item(0).text() == "Aucun fichier en attente"
+        ):
+            return
+
+        # Échanger l'élément avec celui au-dessus
+        queue_files[current_row], queue_files[current_row - 1] = (
+            queue_files[current_row - 1],
+            queue_files[current_row],
+        )
+
+        # Mettre à jour la file d'attente
+        self.update_queue(queue_files)
+
+        # Sélectionner l'élément déplacé
+        self.queue_list.setCurrentRow(current_row - 1)
+
+        self.add_log(
+            f"Élément déplacé vers le haut dans la file d'attente", "INFO", "green"
+        )
+
+        # Signaler le changement de la file d'attente et forcer la mise à jour immédiate
+        if hasattr(self, "control_flags"):
+            self.control_flags["queue_modified"] = True
+            # Forcer la mise à jour immédiate
+            from state_persistence import save_interrupted_encodings
+
+            save_interrupted_encodings(None, queue_files)
+
+    def move_queue_item_to_top(self):
+        """Déplace l'élément sélectionné tout en haut de la file d'attente"""
+        current_row = self.queue_list.currentRow()
+        if current_row <= 0:
+            return  # Premier élément ou aucun élément sélectionné
+
+        # Récupérer la liste actuelle des fichiers en attente
+        queue_files = self.get_current_queue_files()
+
+        # Vérifier si la file contient uniquement le message "Aucun fichier en attente"
+        if (
+            len(queue_files) == 1
+            and self.queue_list.item(0).text() == "Aucun fichier en attente"
+        ):
+            return
+
+        # Extraire l'élément à déplacer
+        item_to_move = queue_files.pop(current_row)
+
+        # L'insérer au début de la liste
+        queue_files.insert(0, item_to_move)
+
+        # Mettre à jour la file d'attente
+        self.update_queue(queue_files)
+
+        # Sélectionner l'élément déplacé
+        self.queue_list.setCurrentRow(0)
+
+        self.add_log(
+            f"Élément déplacé tout en haut de la file d'attente", "INFO", "green"
+        )
+
+        # Signaler le changement de la file d'attente et forcer la mise à jour immédiate
+        if hasattr(self, "control_flags"):
+            self.control_flags["queue_modified"] = True
+            # Forcer la mise à jour immédiate
+            from state_persistence import save_interrupted_encodings
+
+            save_interrupted_encodings(None, queue_files)
+
+    def move_queue_item_down(self):
+        """Déplace l'élément sélectionné vers le bas dans la file d'attente"""
+        current_row = self.queue_list.currentRow()
+        if current_row == -1 or current_row >= self.queue_list.count() - 1:
+            return  # Dernier élément ou aucun élément sélectionné
+
+        # Récupérer la liste actuelle des fichiers en attente
+        queue_files = self.get_current_queue_files()
+
+        # Vérifier si la file contient uniquement le message "Aucun fichier en attente"
+        if (
+            len(queue_files) == 1
+            and self.queue_list.item(0).text() == "Aucun fichier en attente"
+        ):
+            return
+
+        # Échanger l'élément avec celui en-dessous
+        queue_files[current_row], queue_files[current_row + 1] = (
+            queue_files[current_row + 1],
+            queue_files[current_row],
+        )
+
+        # Mettre à jour la file d'attente
+        self.update_queue(queue_files)
+
+        # Sélectionner l'élément déplacé
+        self.queue_list.setCurrentRow(current_row + 1)
+
+        self.add_log(
+            f"Élément déplacé vers le bas dans la file d'attente", "INFO", "green"
+        )
+
+        # Signaler le changement de la file d'attente et forcer la mise à jour immédiate
+        if hasattr(self, "control_flags"):
+            self.control_flags["queue_modified"] = True
+            # Forcer la mise à jour immédiate
+            from state_persistence import save_interrupted_encodings
+
+            save_interrupted_encodings(None, queue_files)
+
+    def move_queue_item_to_bottom(self):
+        """Déplace l'élément sélectionné tout en bas de la file d'attente"""
+        current_row = self.queue_list.currentRow()
+        if current_row == -1 or current_row >= self.queue_list.count() - 1:
+            return  # Dernier élément ou aucun élément sélectionné
+
+        # Récupérer la liste actuelle des fichiers en attente
+        queue_files = self.get_current_queue_files()
+
+        # Vérifier si la file contient uniquement le message "Aucun fichier en attente"
+        if (
+            len(queue_files) == 1
+            and self.queue_list.item(0).text() == "Aucun fichier en attente"
+        ):
+            return
+
+        # Extraire l'élément à déplacer
+        item_to_move = queue_files.pop(current_row)
+
+        # L'ajouter à la fin de la liste
+        queue_files.append(item_to_move)
+
+        # Mettre à jour la file d'attente
+        self.update_queue(queue_files)
+
+        # Sélectionner l'élément déplacé
+        self.queue_list.setCurrentRow(len(queue_files) - 1)
+
+        self.add_log(
+            f"Élément déplacé tout en bas de la file d'attente", "INFO", "green"
+        )
+
+        # Signaler le changement de la file d'attente et forcer la mise à jour immédiate
+        if hasattr(self, "control_flags"):
+            self.control_flags["queue_modified"] = True
+            # Forcer la mise à jour immédiate
+            from state_persistence import save_interrupted_encodings
+
+            save_interrupted_encodings(None, queue_files)
+
+    def clear_queue(self):
+        """Vide complètement la file d'attente"""
+        # Récupérer la liste actuelle des fichiers en attente
+        queue_files = self.get_current_queue_files()
+
+        # Vérifier si la file contient uniquement le message "Aucun fichier en attente"
+        if (
+            len(queue_files) == 1
+            and self.queue_list.item(0).text() == "Aucun fichier en attente"
+        ):
+            return
+
+        # Vider la file d'attente
+        self.update_queue([])
+
+        self.add_log(f"File d'attente vidée", "INFO", "green")
+
+        # Signaler le changement de la file d'attente et forcer la mise à jour immédiate
+        if hasattr(self, "control_flags"):
+            self.control_flags["queue_modified"] = True
+            self.control_flags["queue_cleared"] = True
+            # Forcer la mise à jour immédiate
+            from state_persistence import (
+                save_interrupted_encodings,
+                clear_interrupted_encodings,
+            )
+
+            clear_interrupted_encodings()
+
+    def get_current_queue_files(self):
+        """Récupère la liste actuelle des fichiers en attente à partir du QListWidget"""
+        queue_files = []
+        for i in range(self.queue_list.count()):
+            item = self.queue_list.item(i)
+            # Si c'est le message "Aucun fichier en attente", retourner une liste vide
+            if item.text() == "Aucun fichier en attente":
+                return []
+            # Récupérer l'élément original stocké dans userData
+            queue_files.append(item.data(Qt.UserRole))
+        return queue_files
 
     def update_queue_count_in_menu(self, count):
         # Mettre à jour l'action dans un menu existant
