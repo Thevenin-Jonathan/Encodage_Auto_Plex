@@ -687,8 +687,6 @@ class MainWindow(QMainWindow):
                 normalized_path = os.path.normpath(filepath)
                 # Utiliser une chaîne de commande complète avec shell=True
                 subprocess.run(f'explorer /select,"{normalized_path}"', shell=True)
-            else:  # Linux, Mac
-                subprocess.Popen(["xdg-open", directory])
 
         except Exception as e:
             self.add_log(

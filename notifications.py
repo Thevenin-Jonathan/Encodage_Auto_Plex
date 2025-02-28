@@ -1,9 +1,12 @@
 from plyer import notification
-from constants import maxsize_message, notifications_enabled_default
+from constants import maxsize_message
 from utils import horodatage
+from config import load_config
 
 # Variable globale pour l'état des notifications
-notifications_enabled = notifications_enabled_default
+
+config = load_config()
+notifications_enabled = config["notifications_enabled"]
 
 
 def set_notifications_enabled(enabled):
