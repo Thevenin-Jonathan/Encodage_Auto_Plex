@@ -15,8 +15,8 @@ def selectionner_sous_titres(info_pistes, preset):
     preset -- Chaîne de caractères représentant le preset utilisé pour l'encodage.
 
     Retourne:
-    Une liste des numéros de pistes des sous-titres sélectionnés et le numéro de la piste
-    du sous-titre à incruster (ou None si aucun).
+    Une liste des numéros de pistes des sous-titres sélectionnés, le numéro de la piste
+    du sous-titre à incruster (ou None si aucun) et si oui ou non on force l'encodage quand même.
     """
     sous_titres_selectionnes = []  # Liste des sous-titres à inclure dans la vidéo
     sous_titres_burn = None  # Sous-titre à incruster (burn-in)
@@ -63,14 +63,14 @@ def selectionner_sous_titres(info_pistes, preset):
         ):
             # Trop de sous-titres à inclure, retourner une erreur
             print(f"{horodatage()} 🚫 Trop de sous-titres à inclure.")
-            return None, None
+            return None, None, False
         elif sous_titres_selectionnes == []:
             # Aucun sous-titre français trouvé, retourner une erreur
             print(f"{horodatage()} 🚫 Pas de sous-titres français disponibles.")
-            return None, None
+            return None, None, True
 
         # Retourner les sous-titres sélectionnés et le sous-titre à incruster
-        return sous_titres_selectionnes, sous_titres_burn
+        return sous_titres_selectionnes, sous_titres_burn, False
 
     # Traitement spécifique pour le preset "Mangas VO 1000kbps"
     elif preset == "Mangas VO 1000kbps":
@@ -85,7 +85,7 @@ def selectionner_sous_titres(info_pistes, preset):
                 else:
                     # Si plus d'un sous-titre à incruster est présent, retourner une erreur
                     print(f"{horodatage()} 🚫 Trop de sous-titres à incruster.")
-                    return None, None
+                    return None, None, False
 
         # Si un sous-titre français est présent, le retourner
         if sous_titres_burn is not None:
@@ -93,8 +93,8 @@ def selectionner_sous_titres(info_pistes, preset):
         else:
             # Aucun sous-titre français trouvé, retourner une erreur
             print(f"{horodatage()} 🚫 Pas de sous-titres français disponibles.")
-            return None, None
+            return None, None, False
     else:
         # Si le preset ne correspond à aucun cas géré, retourner une erreur
         print(f"{horodatage()} 🚫 Preset non reconnu: {preset}")
-        return None, None
+        return None, None, False
