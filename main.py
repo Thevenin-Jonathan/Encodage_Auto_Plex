@@ -11,7 +11,7 @@ import qdarkstyle  # Ajouter cet import en haut du fichier
 
 from surveillance import surveille_dossiers
 from encoding import traitement_file_encodage
-from constants import dossiers_presets
+from constants import dossiers_presets, icon_file
 from initialization import vider_fichiers
 from logger import setup_logger
 from gui import MainWindow, LogHandler
@@ -60,7 +60,7 @@ def main():
     # Créer l'application Qt
     app = QApplication(sys.argv)
     # Définir l'icône de l'application (affecte toutes les fenêtres)
-    app_icon = QIcon(os.path.join(BASE_PATH, "images/ico.ico"))
+    app_icon = QIcon(icon_file)
     app.setWindowIcon(app_icon)
 
     # Appliquer le thème sombre avec des boutons plus hauts
