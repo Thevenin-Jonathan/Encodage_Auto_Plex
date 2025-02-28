@@ -89,7 +89,7 @@ def selectionner_sous_titres(info_pistes, preset):
 
         # Si un sous-titre français est présent, le retourner
         if sous_titres_burn is not None:
-            return sous_titres_selectionnes, sous_titres_burn
+            return sous_titres_selectionnes, sous_titres_burn, False
         else:
             # Aucun sous-titre français trouvé, retourner une erreur
             print(f"{horodatage()} 🚫 Pas de sous-titres français disponibles.")
