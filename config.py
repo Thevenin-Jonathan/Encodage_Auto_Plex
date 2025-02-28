@@ -1,11 +1,15 @@
 import json
 import os
 from constants import config_file
+from logger import setup_logger
 
 CONFIG_FILE = config_file
 
 # Valeurs par défaut
 DEFAULT_CONFIG = {"notifications_enabled": True}
+
+# Configurer le logger pour le module principal
+logger = setup_logger(__name__)
 
 
 def save_config(config_data):
@@ -14,7 +18,7 @@ def save_config(config_data):
         with open(CONFIG_FILE, "w") as f:
             json.dump(config_data, f)
     except Exception as e:
-        print(f"Erreur lors de la sauvegarde de la configuration: {e}")
+        logger.error(f"Erreur lors de la sauvegarde de la configuration: {e}")
 
 
 def load_config():
@@ -33,5 +37,5 @@ def load_config():
                     config[key] = value
             return config
     except Exception as e:
-        print(f"Erreur lors du chargement de la configuration: {e}")
+        logger.error(f"Erreur lors du chargement de la configuration: {e}")
         return DEFAULT_CONFIG.copy()
