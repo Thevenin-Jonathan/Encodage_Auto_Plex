@@ -57,6 +57,9 @@ criteres_sous_titres_supprimer = ["sdh", "malentendant", "vfq", "quebec"]
 dossier_encodage_manuel = "D:/Torrents/Encodage_manuel"
 fichier_encodage_manuel = os.path.join(BASE_PATH, "Encodage_manuel.txt")
 
+# Dossier pour l'historique des encodages réussis
+fichier_historique = os.path.join(BASE_PATH, "datas", "successful_encodings.json")
+
 # Taille maximal des messages de notifications windows
 maxsize_message = 70
 
