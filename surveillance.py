@@ -114,9 +114,10 @@ def surveille_dossiers(
                                     # Sauvegarder l'état des encodages interrompus
                                     # L'encodage en cours est None car on vient d'ajouter un fichier à la queue
                                     save_interrupted_encodings(None, queue_items)
-                                    logger.info(
-                                        "État des encodages sauvegardé après ajout à la file d'attente"
-                                    )
+                                    if debug_mode:
+                                        logger.debug(
+                                            "État des encodages sauvegardé après ajout à la file d'attente"
+                                        )
                         else:
                             logger.error(
                                 f"Le fichier {fichier} n'est plus accessible, ignoré"
@@ -126,9 +127,7 @@ def surveille_dossiers(
                 if fichiers_supprimes:
                     for fichier in fichiers_supprimes:
                         if debug_mode:
-                            print(
-                                f"{horodatage()} 🗑️ Fichier supprimé dans {dossier}: {fichier}"
-                            )
+                            logger.debug(f"Fichier supprimé dans {dossier}: {fichier}")
                         if (
                             dossier in fichiers_detectes
                             and fichier in fichiers_detectes[dossier]

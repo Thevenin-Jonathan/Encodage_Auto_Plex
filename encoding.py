@@ -5,7 +5,7 @@ import re
 import time
 from tqdm import tqdm
 from audio_selection import selectionner_pistes_audio
-from subtitle_selection import selectionner_sous_titres
+from subtitle_analyzer import analyser_sous_titres_francais
 from successful_encodings import record_successful_encoding
 from state_persistence import (
     save_interrupted_encodings,
@@ -130,15 +130,16 @@ def lancer_encodage_avec_gui(
         )
 
         # Sélection des sous-titres selon le preset
-        subtitle_tracks, burn_track, force_encodage = selectionner_sous_titres(
-            info_pistes, preset
-        )
+        subtitle_tracks, burn_track, resultats = analyser_sous_titres_francais(fichier)
+
+        # Préparer les options des sous-titres forcés
+        burn_option = "--subtitle-burned=2" if burn_track is not None else ""
 
         # Vérifier si on doit stopper l'encodage si il y a trop de sous-titres à filtrer
-        if subtitle_tracks is None and force_encodage is False:
+        if "VO" in preset and subtitle_tracks is None:
             reason = "subtitle"
             logger.warning(
-                f"Trop de sous-titres à inclure pour {nom_fichier} (requis pour {preset})"
+                f"Pas de sous-titres à inclure pour {nom_fichier} (requis pour {preset})"
             )
             # Ajouter à la liste des encodages manuels avec le preset
             ajouter_fichier_a_liste_encodage_manuel(
@@ -149,26 +150,21 @@ def lancer_encodage_avec_gui(
                 signals.encoding_done.emit()
             return False
 
-        subtitle_option = None
-        burn_option = None
+        if "VO" in preset and subtitle_tracks:
+            burn_track = subtitle_tracks
+            burn_option = "--subtitle-burned=1"
 
-        if force_encodage:
+        if subtitle_tracks is None and burn_track is None:
             logger.warning(
                 f"Pas de piste de sous-titres en français disponible pour {nom_fichier} (requis pour {preset})"
             )
-        else:
-            # Préparer les options des sous-titres
-            subtitle_option = (
-                f'--subtitle={",".join(map(str, subtitle_tracks))}'
-                if subtitle_tracks
-                else ""
-            )
-            # Préparer les options des sous-titres forcés
-            burn_option = (
-                f"--subtitle-burned={subtitle_tracks.index(burn_track) + 1}"
-                if burn_track is not None
-                else ""
-            )
+
+        # Préparer les options des sous-titres
+        subtitle_option = (
+            f"--subtitle={subtitle_tracks},{burn_track}"
+            if subtitle_tracks is not None and burn_track is not None
+            else f"--subtitle={subtitle_tracks}" if subtitle_tracks is not None else ""
+        )
 
         # Construire la commande complète
         handbrake_cmd = [
@@ -493,7 +489,6 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
 
         # Encodage avec gestion GUI
         logger.info(f"Début de l'encodage de {fichier} avec le preset {preset}")
-        logger.info(f"Chemin complet du fichier: {os.path.abspath(fichier)}")
         result = lancer_encodage_avec_gui(
             fichier, preset, signals, control_flags, file_encodage
         )
