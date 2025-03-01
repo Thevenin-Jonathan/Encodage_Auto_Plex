@@ -8,5 +8,7 @@ datas/fichiers_encodes.json
 *.prettierrc
 logs/
 *.log
-datas/config.json
+*.logs
 datas/successful_encodings.json
+datas/config.json
+datas/interrupted_encodings.json

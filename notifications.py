@@ -1,6 +1,23 @@
 from plyer import notification
 from constants import maxsize_message
 from utils import horodatage
+from config import load_config
+
+# Variable globale pour l'état des notifications
+
+config = load_config()
+notifications_enabled = config["notifications_enabled"]
+
+
+def set_notifications_enabled(enabled):
+    """
+    Active ou désactive les notifications Windows.
+
+    Arguments:
+    enabled -- True pour activer les notifications, False pour les désactiver
+    """
+    global notifications_enabled
+    notifications_enabled = enabled
 
 
 def notifier_encodage_lancement(fichier, file_encodage):
@@ -11,6 +28,10 @@ def notifier_encodage_lancement(fichier, file_encodage):
     fichier -- Nom du fichier à encoder.
     file_encodage -- Queue pour la file d'attente d'encodage.
     """
+    # Vérifier si les notifications sont activées
+    if not notifications_enabled:
+        return
+
     short_fichier = (
         fichier
         if len(fichier) <= maxsize_message
@@ -36,6 +57,10 @@ def notifier_encodage_termine(fichier, file_encodage):
     fichier -- Nom du fichier encodé.
     file_encodage -- Queue pour la file d'attente d'encodage.
     """
+    # Vérifier si les notifications sont activées
+    if not notifications_enabled:
+        return
+
     short_fichier = (
         fichier
         if len(fichier) <= maxsize_message
@@ -60,6 +85,10 @@ def notifier_erreur_encodage(fichier):
     Arguments:
     fichier -- Nom du fichier pour lequel l'encodage a échoué.
     """
+    # Vérifier si les notifications sont activées
+    if not notifications_enabled:
+        return
+
     short_fichier = (
         fichier
         if len(fichier) <= maxsize_message

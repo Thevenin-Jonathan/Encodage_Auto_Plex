@@ -2,9 +2,18 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 import datetime
+import sys
+
+# Définir le chemin de base en fonction de l'exécution en tant que script ou exécutable
+if getattr(sys, "frozen", False):
+    # Mode exécutable - utiliser le dossier où se trouve l'exécutable
+    BASE_PATH = os.path.dirname(sys.executable)
+else:
+    # Mode développement - utiliser le dossier du script
+    BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # Créer le dossier logs s'il n'existe pas
-logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+logs_dir = os.path.join(BASE_PATH, "logs")
 os.makedirs(logs_dir, exist_ok=True)
 
 
@@ -42,3 +51,13 @@ def setup_logger(name):
     logger.addHandler(file_handler)
 
     return logger
+
+
+def colored_log(logger, message, level="INFO", color=None):
+    """Ajoute un log avec une couleur personnalisée"""
+    # Créer un LogRecord avec un attribut custom_color
+    record = logger.makeRecord(
+        logger.name, getattr(logging, level), "", 0, message, None, None
+    )
+    record.custom_color = color
+    logger.handle(record)
