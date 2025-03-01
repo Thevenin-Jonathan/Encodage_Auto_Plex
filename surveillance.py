@@ -71,7 +71,7 @@ def surveille_dossiers(
                             continue
                         colored_log(
                             logger,
-                            f"Nouveau fichier détecté: {fichier} dans {dossier}",
+                            f"Nouveau fichier détecté: {os.path.basename(fichier)} dans {dossier}",
                             "INFO",
                             "blue",
                         )
@@ -103,7 +103,7 @@ def surveille_dossiers(
                                     f"{horodatage()} 📥 Fichier ajouté à la file d'attente d'encodage: {fichier}"
                                 )
                                 logger.info(
-                                    f"Fichier {fichier} ajouté à la file d'encodage avec preset {preset}"
+                                    f"Fichier {os.path.basename(fichier)} ajouté à la file d'encodage avec preset {preset}"
                                 )
                                 # Mettre à jour l'interface graphique
                                 if signals:
