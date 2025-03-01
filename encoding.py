@@ -130,30 +130,32 @@ def lancer_encodage_avec_gui(
         )
 
         # Sélection des sous-titres selon le preset
-        subtitle_tracks, burn_track, resultats = analyser_sous_titres_francais(fichier)
+        subtitle_tracks, burn_track, resultats = analyser_sous_titres_francais(
+            fichier, preset
+        )
 
         # Préparer les options des sous-titres forcés
         burn_option = "--subtitle-burned=2" if burn_track is not None else ""
 
-        # Vérifier si on doit stopper l'encodage si il y a trop de sous-titres à filtrer
-        if "VO" in preset and subtitle_tracks is None:
-            reason = "subtitle"
-            logger.warning(
-                f"Pas de sous-titres à inclure pour {nom_fichier} (requis pour {preset})"
-            )
-            # Ajouter à la liste des encodages manuels avec le preset
-            ajouter_fichier_a_liste_encodage_manuel(
-                fichier, nom_fichier, reason, preset, signals
-            )
-            # Si des signaux GUI sont disponibles, mettre à jour l'interface
-            if signals and hasattr(signals, "encoding_done"):
-                signals.encoding_done.emit()
-            return False
+        # Vérifier si le preset est VO pour forcer le sous-titrage verbal
+        if "VO" in preset:
+            if subtitle_tracks is None:
+                reason = "subtitle"
+                logger.warning(
+                    f"Pas de sous-titres à inclure pour {nom_fichier} (requis pour {preset})"
+                )
+                # Ajouter à la liste des encodages manuels avec le preset
+                ajouter_fichier_a_liste_encodage_manuel(
+                    fichier, nom_fichier, reason, preset, signals
+                )
+                # Si des signaux GUI sont disponibles, mettre à jour l'interface
+                if signals and hasattr(signals, "encoding_done"):
+                    signals.encoding_done.emit()
+                return False
+            else:
+                burn_option = "--subtitle-burned=1"
 
-        if "VO" in preset and subtitle_tracks:
-            burn_track = subtitle_tracks
-            burn_option = "--subtitle-burned=1"
-
+        # Vérifier si il y a des sous-titres à inclure sinon afficher un avertissement
         if subtitle_tracks is None and burn_track is None:
             logger.warning(
                 f"Pas de piste de sous-titres en français disponible pour {nom_fichier} (requis pour {preset})"

@@ -96,7 +96,7 @@ def obtenir_info_mediainfo_explicit_path(fichier_mkv, mediainfo_path):
         return f"Une erreur avec le chemin explicite: {e}"
 
 
-def analyser_sous_titres_francais(fichier_mkv, verbose=False):
+def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
     """
     Analyse les sous-titres français d'un fichier MKV, détermine leur type et détecte les variantes régionales
 
@@ -523,9 +523,14 @@ def analyser_sous_titres_francais(fichier_mkv, verbose=False):
                     if st["Est_Malentendant"]
                     else ""
                 )
-                logger.debug(
-                    f"Sous-titre #{st['Index_Sous_Titre']} - Variante: {st['Variante'].capitalize()}{titre}{est_malentendant} - Taille: {st['Taille']/1024:.2f} KB"
-                )
+                if "VO" in preset:
+                    logger.debug(
+                        f"Sous-titre forcé #{st['Index_Sous_Titre']} - Variante: {st['Variante'].capitalize()}{titre}{est_malentendant} - Taille: {st['Taille']/1024:.2f} KB"
+                    )
+                else:
+                    logger.debug(
+                        f"Sous-titre #{st['Index_Sous_Titre']} - Variante: {st['Variante'].capitalize()}{titre}{est_malentendant} - Taille: {st['Taille']/1024:.2f} KB"
+                    )
 
                 # S'il y a d'autres sous-titres verbaux, les mentionner
                 if len(resultat["sous_titres_verbaux"]) > 1:
@@ -545,7 +550,7 @@ def analyser_sous_titres_francais(fichier_mkv, verbose=False):
                     f"Aucun sous-titre verbal français identifié pour : {fichier_mkv}"
                 )
 
-            if resultat["sous_titres_non_verbaux"]:
+            if resultat["sous_titres_non_verbaux"] and "VO" not in preset:
                 st = resultat["sous_titres_non_verbaux"][0]
                 resume += (
                     f"Sous-titre non verbal recommandé (forcé/traductions/effets):\n"
@@ -583,6 +588,8 @@ def analyser_sous_titres_francais(fichier_mkv, verbose=False):
                             resume += f", Titre: {st['Titre']}"
                         resume += f", Taille: {st['Taille']/1024:.2f} KB\n"
                     resume += "\n"
+            elif "VO" in preset:
+                resume += "Pistes non verbales ignorées pour les encodages VO.\n\n"
             else:
                 resume += "Aucun sous-titre non verbal français identifié.\n\n"
                 logger.warning(f"Aucun sous-titre forcé identifié pour : {fichier_mkv}")
@@ -604,13 +611,13 @@ def analyser_sous_titres_francais(fichier_mkv, verbose=False):
 
 
 # Exemple d'utilisation
-# fichier_mkv = "C:/This.Is.40.2012.MULTi.VF2.1080p.AMZN.WEB.DDP5.1.H265-TFA.mkv"
+# fichier_mkv = "C:/Blue Miburo S01E01.mkv"
 # index_verbal, index_non_verbal, resultat = analyser_sous_titres_francais(
-#     fichier_mkv, True
+#     fichier_mkv, "Mangas - VO", True
 # )
 
 # # Afficher les index recommandés
 # print(f"Index sous-titre verbal recommandé: {index_verbal}")
 # print(f"Index sous-titre non-verbal recommandé: {index_non_verbal}")
 
-# # print(resultat["resume"])
+# print(resultat["resume"])
