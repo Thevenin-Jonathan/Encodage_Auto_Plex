@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import (
     QHeaderView,
     QCheckBox,
     QListWidgetItem,
+    QSizePolicy,
 )
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
 from PyQt5.QtGui import QIcon, QFont
@@ -296,13 +297,43 @@ class MainWindow(QMainWindow):
         # Barre supérieure avec boutons pour les panneaux latéraux
         top_bar = QHBoxLayout()
 
+        # Layout pour les boutons à gauche (historique)
+        left_buttons_layout = QVBoxLayout()
+        left_buttons_layout.setAlignment(Qt.AlignTop)  # Aligner en haut
+        left_buttons_layout.setContentsMargins(0, 0, 0, 0)  # Réduire les marges
+        left_buttons_layout.setSpacing(5)  # Espacement entre widgets si plusieurs
+
         # Bouton pour afficher/masquer l'historique des encodages (à gauche)
-        self.show_history_button = QPushButton("Historique encodages")
+        self.show_history_button = QPushButton("Historique\ndes encodages")
         self.show_history_button.setToolTip(
             "Afficher/masquer l'historique des encodages réussis"
         )
         self.show_history_button.clicked.connect(self.toggle_history_panel)
-        top_bar.addWidget(self.show_history_button)
+
+        # Forcer la taille via une feuille de style CSS
+        self.show_history_button.setStyleSheet(
+            """
+            QPushButton {
+                min-height: 50px;
+                min-width: 140px;
+                font-weight: bold;
+            }
+        """
+        )
+
+        left_buttons_layout.addWidget(self.show_history_button)
+
+        # Ajouter d'autres boutons à gauche si nécessaire
+        # left_buttons_layout.addWidget(autre_bouton)
+
+        # Ajouter le layout gauche à la barre supérieure
+        top_bar.addLayout(left_buttons_layout)
+
+        # Créer un layout vertical pour la checkbox des notifications avec alignement en haut
+        notifications_layout = QVBoxLayout()
+        notifications_layout.setAlignment(Qt.AlignTop)  # Aligner en haut
+        notifications_layout.setContentsMargins(0, 0, 0, 0)  # Réduire les marges
+        notifications_layout.setSpacing(5)
 
         # Checkbox pour activer/désactiver les notifications Windows
         self.notifications_checkbox = QCheckBox("Notifications Windows")
@@ -311,15 +342,35 @@ class MainWindow(QMainWindow):
         )
         self.notifications_checkbox.setChecked(config["notifications_enabled"])
         self.notifications_checkbox.stateChanged.connect(self.toggle_notifications)
-        top_bar.addWidget(self.notifications_checkbox)
+        notifications_layout.addWidget(self.notifications_checkbox)
+
+        # Ajouter le layout des notifications à la barre supérieure
+        top_bar.addLayout(notifications_layout)
 
         top_bar.addStretch()
 
+        # Layout vertical pour les boutons de logs
+        logs_buttons_layout = QVBoxLayout()
+        logs_buttons_layout.setSpacing(5)  # Espacement entre les boutons
+
         # Bouton pour afficher/masquer les logs (à droite)
-        self.show_logs_button = QPushButton("Afficher logs")
+        self.show_logs_button = QPushButton("Afficher\nles logs")
         self.show_logs_button.setToolTip("Afficher/masquer le panneau de logs")
         self.show_logs_button.clicked.connect(self.toggle_logs_panel)
-        top_bar.addWidget(self.show_logs_button)
+        self.show_logs_button.setMinimumHeight(75)  # Hauteur minimale en pixels
+        self.show_logs_button.setMinimumWidth(120)  # Largeur minimale en pixels
+        logs_buttons_layout.addWidget(self.show_logs_button)
+
+        # Bouton pour charger les anciens logs
+        self.load_old_logs_button = QPushButton("Charger les\nanciens log")
+        self.load_old_logs_button.setToolTip("Charger le dernier fichier de logs")
+        self.load_old_logs_button.clicked.connect(self.load_last_log)
+        self.show_logs_button.setMinimumHeight(75)  # Hauteur minimale en pixels
+        self.show_logs_button.setMinimumWidth(120)  # Largeur minimale en pixels
+        logs_buttons_layout.addWidget(self.load_old_logs_button)
+
+        # Ajouter le layout vertical au layout horizontal
+        top_bar.addLayout(logs_buttons_layout)
 
         main_layout.addLayout(top_bar)
 
@@ -461,6 +512,15 @@ class MainWindow(QMainWindow):
         self.history_panel_visible = False
         self.logs_panel_visible = False
 
+        # Index du dernier fichier de log chargé
+        self.current_log_index = -1
+
+        # Indicateur si tous les logs ont été chargés
+        self.all_logs_loaded = False
+
+        # État persistant des logs
+        self.button_permanently_hidden = False  # Nouvelle variable persistante
+
         # Ou ajout d'une action dans un menu existant
         # file_menu = menubar.addMenu("Fichier")
         # self.queue_action = QAction("File d'attente (0)", self)
@@ -513,6 +573,9 @@ class MainWindow(QMainWindow):
         if self.logs_panel_visible:
             self.hide_logs_panel()
         else:
+            # Si on ouvre à nouveau le panneau après l'avoir complètement fermé, on réinitialise l'état
+            if not self.logs_panel_visible:
+                self.reset_log_loading_state()
             self.show_logs_panel()
 
     def show_logs_panel(self):
@@ -533,6 +596,10 @@ class MainWindow(QMainWindow):
         self.splitter.setSizes(new_sizes)
         self.logs_panel_visible = True
         self.show_logs_button.setText("Masquer logs")
+
+        # Si le bouton a été caché de façon permanente, ne pas le réafficher
+        if self.button_permanently_hidden:
+            self.load_old_logs_button.setVisible(False)
 
     def toggle_history_panel(self):
         """Affiche ou masque le panneau d'historique des encodages"""
@@ -561,7 +628,7 @@ class MainWindow(QMainWindow):
 
         self.splitter.setSizes(new_sizes)
         self.history_panel_visible = True
-        self.show_history_button.setText("Masquer historique")
+        self.show_history_button.setText("Masquer\nl'historique")
 
     def hide_history_panel(self):
         """Masque le panneau d'historique des encodages"""
@@ -576,14 +643,14 @@ class MainWindow(QMainWindow):
             self.splitter.setSizes([0, sum(current_sizes), 0])
 
         self.history_panel_visible = False
-        self.show_history_button.setText("Historique encodages")
+        self.show_history_button.setText("Historique\ndes encodages")
 
     def refresh_history_panel(self):
         """Rafraîchit le panneau d'historique des encodages avec les données récentes"""
         self.history_panel.load_recent_encodings()
 
     def hide_logs_panel(self):
-        """Masque le panneau de logs"""
+        """Masque le panneau de logs et préserve l'état persistant du bouton"""
         current_sizes = self.splitter.sizes()
         if self.history_panel_visible:
             # Si le panneau d'historique est visible, ajuster pour ne garder que le contenu principal et l'historique
@@ -596,6 +663,12 @@ class MainWindow(QMainWindow):
 
         self.logs_panel_visible = False
         self.show_logs_button.setText("Afficher logs")
+
+        # Ne réinitialiser que si le bouton n'est pas caché de façon permanente
+        if not self.button_permanently_hidden:
+            self.current_log_index = -1
+            self.load_old_logs_button.setVisible(True)
+            self.load_old_logs_button.setText("Charger les\nanciens logs")
 
     def add_log(self, message, level="INFO", custom_color=None):
         """Ajoute un message dans la zone de logs avec coloration selon le niveau ou personnalisée"""
@@ -1071,3 +1144,145 @@ class MainWindow(QMainWindow):
                 "ERROR",
                 "red",
             )
+
+    def load_last_log(self):
+        """
+        Charge les anciens fichiers de logs de façon séquentielle.
+        À chaque clic, charge un fichier plus ancien que le précédent.
+        Cache le bouton une fois tous les logs chargés.
+        """
+        import os
+        from datetime import datetime
+
+        # Chemin du dossier des logs
+        logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+
+        if not os.path.exists(logs_dir):
+            self.add_log("Dossier de logs non trouvé", "WARNING", "orange")
+            return
+
+        # Récupérer tous les fichiers de logs (en supposant qu'ils ont l'extension .log)
+        log_files = [f for f in os.listdir(logs_dir) if f.endswith(".log")]
+
+        if not log_files:
+            self.add_log("Aucun fichier de log archivé trouvé", "INFO", "gray")
+            return
+
+        # Trier les fichiers par date de modification (le plus récent d'abord)
+        log_files.sort(
+            key=lambda x: os.path.getmtime(os.path.join(logs_dir, x)), reverse=True
+        )
+
+        # Si le panneau de logs n'est pas visible, l'afficher
+        if not self.logs_panel_visible:
+            self.show_logs_panel()
+
+        # Avancer à l'index suivant à chaque appel
+        self.current_log_index += 1
+
+        # Si on a atteint la fin de la liste
+        if self.current_log_index >= len(log_files):
+            # Masquer le bouton de chargement des anciens logs de façon permanente
+            self.load_old_logs_button.setVisible(False)
+            self.button_permanently_hidden = (
+                True  # Marquer que le bouton est caché de façon permanente
+            )
+            self.add_log("Tous les fichiers de logs ont été chargés", "INFO", "green")
+            # Marquer que tous les logs ont été chargés
+            self.all_logs_loaded = True
+            return
+
+        # Sélectionner le fichier de log selon l'index courant
+        current_log_file = log_files[self.current_log_index]
+        file_path = os.path.join(logs_dir, current_log_file)
+
+        # Afficher l'information sur le fichier qu'on charge
+        self.add_log(
+            f"Chargement du fichier de logs {self.current_log_index + 1}/{len(log_files)}: {current_log_file}",
+            "INFO",
+            "cyan",
+        )
+
+        # Afficher combien de fichiers de logs restent
+        logs_restants = len(log_files) - self.current_log_index - 1
+        if logs_restants > 0:
+            self.load_old_logs_button.setText(
+                f"Charger logs\n({logs_restants} restants)"
+            )
+        else:
+            self.load_old_logs_button.setText("Charger logs\n(dernier)")
+
+        try:
+            # Obtenir la date de modification du fichier
+            mod_time = datetime.fromtimestamp(os.path.getmtime(file_path))
+            mod_time_str = mod_time.strftime("%d/%m/%Y %H:%M:%S")
+
+            # Lire le contenu du fichier
+            with open(file_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+
+                # Prendre uniquement les 600 dernières lignes
+                if len(lines) > 600:
+                    lines = lines[-600:]
+                    truncated_message = f"<i>Affichage des 600 dernières lignes sur {len(lines)} au total...</i>"
+                else:
+                    truncated_message = (
+                        f"<i>Affichage des {len(lines)} lignes du fichier...</i>"
+                    )
+
+                # Préparer le HTML pour insérer les anciens logs
+                log_html = f"<hr><h3>ANCIEN LOG ({self.current_log_index + 1}/{len(log_files)}): {current_log_file} (modifié le {mod_time_str})</h3>"
+                log_html += truncated_message + "<br>"
+
+                # Récupérer l'ancien contenu
+                ancien_contenu = self.logs_panel.log_text.toHtml()
+
+                # Formatter les lignes avec coloration
+                for line in lines:
+                    line_html = line.strip()
+                    if "WARNING" in line:
+                        log_html += (
+                            f"<span style='color:orange;'>{line_html}</span><br>"
+                        )
+                    elif "ERROR" in line or "CRITICAL" in line:
+                        log_html += f"<span style='color:red;'>{line_html}</span><br>"
+                    elif "INFO" in line:
+                        log_html += f"<span style='color:white;'>{line_html}</span><br>"
+                    else:
+                        log_html += f"<span style='color:gray;'>{line_html}</span><br>"
+
+                log_html += "<hr>"
+
+                # Extraire le contenu du body
+                if "<body" in ancien_contenu and "</body>" in ancien_contenu:
+                    debut = ancien_contenu.find("<body")
+                    debut = ancien_contenu.find(">", debut) + 1
+                    fin = ancien_contenu.find("</body>")
+                    contenu_body = ancien_contenu[debut:fin]
+
+                    # Reconstruire le HTML avec les anciens logs au début
+                    debut_html = ancien_contenu[:debut]
+                    fin_html = ancien_contenu[fin:]
+                    nouveau_html = debut_html + log_html + contenu_body + fin_html
+
+                    # Mettre à jour le contenu
+                    self.logs_panel.log_text.setHtml(nouveau_html)
+                else:
+                    # Fallback si la structure HTML n'est pas standard
+                    # Insérer au début du texte actuel
+                    self.logs_panel.log_text.clear()
+                    self.logs_panel.log_text.setHtml(log_html + ancien_contenu)
+
+        except Exception as e:
+            self.add_log(
+                f"Erreur lors du chargement des logs: {str(e)}",
+                "ERROR",
+                "red",
+            )
+
+    def reset_log_loading_state(self):
+        """Réinitialise l'état de chargement des logs"""
+        self.current_log_index = -1
+        self.all_logs_loaded = False
+        self.load_old_logs_button.setVisible(True)
+        self.load_old_logs_button.setText("Charger les\nanciens logs")
