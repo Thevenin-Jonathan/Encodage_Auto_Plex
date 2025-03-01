@@ -1154,8 +1154,16 @@ class MainWindow(QMainWindow):
         import os
         from datetime import datetime
 
-        # Chemin du dossier des logs
-        logs_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
+        # Définir le chemin de base en fonction de l'exécution en tant que script ou exécutable
+        if getattr(sys, "frozen", False):
+            # Mode exécutable - utiliser le dossier où se trouve l'exécutable
+            BASE_PATH = os.path.dirname(sys.executable)
+        else:
+            # Mode développement - utiliser le dossier du script
+            BASE_PATH = os.path.dirname(os.path.abspath(__file__))
+
+        # Créer le dossier logs s'il n'existe pas
+        logs_dir = os.path.join(BASE_PATH, "logs")
 
         if not os.path.exists(logs_dir):
             self.add_log("Dossier de logs non trouvé", "WARNING", "orange")
