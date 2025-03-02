@@ -450,7 +450,10 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
         queue_size = file_encodage.qsize()
 
         if queue_size > 0:
-            logger.info(f"Récupération de {queue_size} éléments dans la file d'attente")
+            if debug_mode:
+                logger.info(
+                    f"Récupération de {queue_size} éléments dans la file d'attente"
+                )
             # Créer une liste temporaire pour stocker les éléments
             temp_items = []
 
@@ -498,8 +501,14 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
             if not file_encodage.empty():
                 queue_items = list(file_encodage.queue)
                 save_interrupted_encodings(None, queue_items)
-                logger.info("État des encodages mis à jour (file d'attente uniquement)")
+                if debug_mode:
+                    logger.debug(
+                        "État des encodages mis à jour (file d'attente uniquement)"
+                    )
             else:
                 # Si la file est vide, on peut tout effacer
                 clear_interrupted_encodings()
-                logger.info("État des encodages effacé (aucun encodage en attente)")
+                if debug_mode:
+                    logger.debug(
+                        "État des encodages effacé (aucun encodage en attente)"
+                    )
