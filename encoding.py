@@ -3,14 +3,12 @@ import os
 import subprocess
 import re
 import time
-from tqdm import tqdm
 from audio_selection import selectionner_pistes_audio
 from subtitle_analyzer import analyser_sous_titres_francais
 from successful_encodings import record_successful_encoding
 from state_persistence import (
     save_interrupted_encodings,
     clear_interrupted_encodings,
-    load_interrupted_encodings,
 )
 from constants import (
     dossier_sortie,
@@ -20,10 +18,8 @@ from constants import (
 from utils import horodatage, tronquer_nom_fichier
 from file_operations import (
     obtenir_pistes,
-    verifier_dossiers,
     ajouter_fichier_a_liste_encodage_manuel,
 )
-from command_builder import construire_commande_handbrake
 from notifications import (
     notifier_encodage_lancement,
     notifier_encodage_termine,
