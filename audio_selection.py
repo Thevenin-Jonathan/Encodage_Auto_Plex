@@ -15,7 +15,11 @@ def selectionner_pistes_audio(info_pistes, preset):
     """
     pistes_audio_selectionnees = []
 
-    if preset in ["Dessins animes FR 1000kbps", "1080p HD-Light 1500kbps"]:
+    if preset in [
+        "Dessins animes FR 1000kbps",
+        "1080p HD-Light 1500kbps",
+        "1080p HD-Light 2000kbps",
+    ]:
         # Sélectionner les pistes audio en français
         pistes_francaises = [
             piste

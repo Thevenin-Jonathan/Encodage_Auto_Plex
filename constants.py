@@ -22,6 +22,7 @@ dossiers_presets = {
     "D:/Torrents/Manga": "Mangas MULTI 1000kbps",
     "D:/Torrents/Manga_VO": "Mangas VO 1000kbps",
     "D:/Torrents/Series": "1080p HD-Light 1500kbps",
+    "D:/Torrents/2000kbps": "1080p HD-Light 2000kbps",
 }
 
 # Chemin du dossier de sortie pour les fichiers encodés
