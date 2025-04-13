@@ -25,7 +25,7 @@ def setup_logger(name):
     if logger.handlers:
         return logger
 
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
 
     # Format du log
     formatter = logging.Formatter(

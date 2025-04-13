@@ -2,10 +2,7 @@ import sys
 import os
 import subprocess
 import logging
-import time
-from threading import RLock
 from PyQt5.QtWidgets import (
-    QApplication,
     QMainWindow,
     QWidget,
     QVBoxLayout,
@@ -23,10 +20,9 @@ from PyQt5.QtWidgets import (
     QHeaderView,
     QCheckBox,
     QListWidgetItem,
-    QSizePolicy,
 )
-from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot, QSize
-from PyQt5.QtGui import QIcon, QFont
+from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QFont
 from successful_encodings import get_recent_encodings
 from constants import fichier_encodage_manuel
 from config import load_config
@@ -462,7 +458,7 @@ class MainWindow(QMainWindow):
         # Liste des encodages manuels avec possibilité de sélection
         self.manual_list = QListWidget()
         self.manual_list.setMaximumHeight(150)
-        self.manual_list.setSelectionMode(QListWidget.MultiSelection)
+        self.manual_list.setSelectionMode(QListWidget.SingleSelection)
         main_layout.addWidget(self.manual_list)
 
         # Boutons pour gérer les encodages manuels
@@ -954,7 +950,7 @@ class MainWindow(QMainWindow):
         # Vider la file d'attente
         self.update_queue([])
 
-        self.add_log(f"File d'attente vidée", "INFO", "green")
+        self.add_log("File d'attente vidée", "INFO", "green")
 
         # Signaler le changement de la file d'attente et forcer la mise à jour immédiate
         if hasattr(self, "control_flags"):
@@ -962,7 +958,6 @@ class MainWindow(QMainWindow):
             self.control_flags["queue_cleared"] = True
             # Forcer la mise à jour immédiate
             from state_persistence import (
-                save_interrupted_encodings,
                 clear_interrupted_encodings,
             )
 
