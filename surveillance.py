@@ -99,12 +99,14 @@ def surveille_dossiers(
                                 if dossier not in fichiers_encodes:
                                     fichiers_encodes[dossier] = []
                                 fichiers_encodes[dossier].append(fichier)
-                                print(
-                                    f"{horodatage()} 📥 Fichier ajouté à la file d'attente d'encodage: {fichier}"
+
+                                colored_log(
+                                    logger,
+                                    f"Fichier {os.path.basename(fichier)} ajouté à la file d'encodage avec preset {preset}",
+                                    "INFO",
+                                    "blue",
                                 )
-                                logger.info(
-                                    f"Fichier {os.path.basename(fichier)} ajouté à la file d'encodage avec preset {preset}"
-                                )
+
                                 # Mettre à jour l'interface graphique
                                 if signals:
                                     # Créer une copie temporaire de la queue pour l'affichage
