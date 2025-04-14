@@ -69,12 +69,6 @@ def surveille_dossiers(
                         ):
                             # Ignorer les fichiers déjà encodés
                             continue
-                        colored_log(
-                            logger,
-                            f"Nouveau fichier détecté: {os.path.basename(fichier)} dans {dossier}",
-                            "INFO",
-                            "blue",
-                        )
                         if dossier not in fichiers_detectes:
                             fichiers_detectes[dossier] = []
                         fichiers_detectes[dossier].append(fichier)
@@ -104,7 +98,7 @@ def surveille_dossiers(
                                     logger,
                                     f"Fichier {os.path.basename(fichier)} ajouté à la file d'encodage avec preset {preset}",
                                     "INFO",
-                                    "blue",
+                                    "skyblue",
                                 )
 
                                 # Mettre à jour l'interface graphique
