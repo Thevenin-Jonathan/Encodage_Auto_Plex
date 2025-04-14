@@ -62,8 +62,6 @@ def record_successful_encoding(file_path, file_size):
     with open(SUCCESSFUL_ENCODINGS_FILE, "w") as f:
         json.dump(encodings, f, indent=4)
 
-    logger.info(f"Encodage réussi enregistré: {filename} ({round(file_size, 2)} MB)")
-
 
 def get_recent_encodings(hours=72):
     """
