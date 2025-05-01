@@ -20,16 +20,6 @@ def selectionner_pistes_audio(info_pistes, preset):
         "Films - Series VF",
         "4K - 10bits",
     ]:
-        # Marquer les pistes de langue inconnue comme françaises
-        for piste in info_pistes["TitleList"][0]["AudioList"]:
-            if (
-                piste.get("LanguageCode", "") == ""
-                or piste.get("LanguageCode", "") == "und"
-            ):
-                print(
-                    f"{horodatage()} ℹ️ Piste audio de langue inconnue considérée comme française: {piste.get('Name', 'Sans nom')}"
-                )
-                piste["LanguageCode"] = "fra"
 
         # Sélectionner les pistes audio en français
         pistes_francaises = [
