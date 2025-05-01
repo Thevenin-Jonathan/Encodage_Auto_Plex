@@ -1,7 +1,6 @@
 import os
 import subprocess
 import json
-import argparse
 
 from logger import setup_logger
 
@@ -608,16 +607,3 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
         if verbose:
             print(f"Exception dans analyser_sous_titres_francais: {e}")
         return None, None, {"erreur": f"Une erreur s'est produite : {e}"}
-
-
-# Exemple d'utilisation
-# fichier_mkv = "C:/Blue Miburo S01E01.mkv"
-# index_verbal, index_non_verbal, resultat = analyser_sous_titres_francais(
-#     fichier_mkv, "Mangas - VO", True
-# )
-
-# # Afficher les index recommandés
-# print(f"Index sous-titre verbal recommandé: {index_verbal}")
-# print(f"Index sous-titre non-verbal recommandé: {index_non_verbal}")
-
-# print(resultat["resume"])
