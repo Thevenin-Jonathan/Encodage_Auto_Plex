@@ -154,7 +154,7 @@ def lancer_encodage_avec_gui(
         # Vérifier si il y a des sous-titres à inclure sinon afficher un avertissement
         if subtitle_tracks is None and burn_track is None:
             logger.warning(
-                f"Pas de piste de sous-titres en français disponible pour {nom_fichier} (requis pour {preset})"
+                f"Pas de piste de sous-titres en français disponible pour {nom_fichier}"
             )
 
         # Préparer les options des sous-titres
