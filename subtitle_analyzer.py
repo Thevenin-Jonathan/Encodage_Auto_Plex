@@ -504,13 +504,13 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
 
             if resultat["sous_titres_verbaux"]:
                 st = resultat["sous_titres_verbaux"][0]
-                resume += f"Sous-titre verbal recommandé (dialogues complets):\n"
+                resume += "Sous-titre verbal recommandé (dialogues complets):\n"
                 resume += f"- Sous-titre #{st['Index_Sous_Titre']} (Track ID: {st['ID_Track']})\n"
                 resume += f"- Variante: {st['Variante'].capitalize()}\n"
                 if st["Titre"]:
                     resume += f"- Titre: {st['Titre']}\n"
                 if st["Est_Malentendant"]:
-                    resume += f"- Type: Pour malentendants (SDH)\n"
+                    resume += "- Type: Pour malentendants (SDH)\n"
                 resume += f"- Éléments: {st['Elements']} ({st['Elements_Par_Minute']} par minute)\n"
                 resume += (
                     f"- Taille: {st['Taille']} octets ({st['Taille']/1024:.2f} KB)\n\n"
@@ -518,7 +518,7 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
 
                 titre = f" - Titre: {st['Titre']}" if st["Titre"] else ""
                 est_malentendant = (
-                    f" - Type: Pour malentendants (SDH)"
+                    " - Type: Pour malentendants (SDH)"
                     if st["Est_Malentendant"]
                     else ""
                 )
@@ -552,14 +552,14 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
             if resultat["sous_titres_non_verbaux"] and "VO" not in preset:
                 st = resultat["sous_titres_non_verbaux"][0]
                 resume += (
-                    f"Sous-titre non verbal recommandé (forcé/traductions/effets):\n"
+                    "Sous-titre non verbal recommandé (forcé/traductions/effets):\n"
                 )
                 resume += f"- Sous-titre #{st['Index_Sous_Titre']} (Track ID: {st['ID_Track']})\n"
                 resume += f"- Variante: {st['Variante'].capitalize()}\n"
                 if st["Titre"]:
                     resume += f"- Titre: {st['Titre']}\n"
                 if st["Est_Malentendant"]:
-                    resume += f"- Type: Pour malentendants (SDH)\n"
+                    resume += "- Type: Pour malentendants (SDH)\n"
                 resume += f"- Éléments: {st['Elements']} ({st['Elements_Par_Minute']} par minute)\n"
                 resume += (
                     f"- Taille: {st['Taille']} octets ({st['Taille']/1024:.2f} KB)\n\n"
@@ -567,7 +567,7 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
 
                 titre = f" - Titre: {st['Titre']}" if st["Titre"] else ""
                 est_malentendant = (
-                    f" - Type: Pour malentendants (SDH)"
+                    " - Type: Pour malentendants (SDH)"
                     if st["Est_Malentendant"]
                     else ""
                 )
