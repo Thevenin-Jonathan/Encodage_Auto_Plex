@@ -9,7 +9,7 @@ else:
     BASE_PATH = os.path.dirname(__file__)
 
 # Définir la variable debug_mode
-debug_mode = False  # Change cette valeur à True pour activer le mode débogage
+debug_mode = True  # Change cette valeur à True pour activer le mode débogage
 
 config_file = os.path.join(BASE_PATH, "datas", "config.json")
 
@@ -17,12 +17,12 @@ icon_file = os.path.join(BASE_PATH, "images", "ico.ico")
 
 # Dossiers à surveiller et leurs presets HandBrake
 dossiers_presets = {
-    "D:/Torrents/Dessins_animes": "Dessins animes FR 1000kbps",
-    "D:/Torrents/Films": "1080p HD-Light 1500kbps",
-    "D:/Torrents/Manga": "Mangas MULTI 1000kbps",
-    "D:/Torrents/Manga_VO": "Mangas VO 1000kbps",
-    "D:/Torrents/Series": "1080p HD-Light 1500kbps",
-    "D:/Torrents/2000kbps": "1080p HD-Light 2000kbps",
+    "D:/Torrents/Dessins animes VF": "Dessins animes VF",
+    "D:/Torrents/Film - series VF": "Films - Series VF",
+    "D:/Torrents/Film - series MULTI": "Films - Series MULTI",
+    "D:/Torrents/Mangas MULTI": "Mangas MULTI",
+    "D:/Torrents/Mangas VO": "Mangas VO",
+    "D:/Torrents/4K - 10bits": "4K - 10bits",
 }
 
 # Chemin du dossier de sortie pour les fichiers encodés
