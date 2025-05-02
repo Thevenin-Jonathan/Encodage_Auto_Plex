@@ -480,7 +480,12 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
             index_verbal_recommande = st["Index_Sous_Titre"]
 
         # Recommandation pour les sous-titres non verbaux
-        if sous_titres_standards_non_verbaux:
+        if "VO" in preset:
+            # Pour les presets VO, on ne veut pas de sous-titres non verbaux
+            index_non_verbal_recommande = None
+            resultat["recommandations"]["piste_non_verbale"] = None
+            resultat["recommandations"]["index_non_verbal"] = None
+        elif sous_titres_standards_non_verbaux:
             st = sorted(
                 sous_titres_standards_non_verbaux, key=lambda x: -x["Priorité_Variante"]
             )[0]
