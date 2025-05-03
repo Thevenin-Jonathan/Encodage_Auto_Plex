@@ -66,7 +66,7 @@ def lancer_encodage_avec_gui(
     # Récupérer uniquement le nom du fichier
     nom_fichier = os.path.basename(fichier)
     short_fichier = tronquer_nom_fichier(nom_fichier)
-    base_nom, extension = os.path.splitext(nom_fichier)
+    base_nom, _ = os.path.splitext(nom_fichier)
     fichier_sortie = f"{base_nom}_encoded.mkv"  # Toujours utiliser .mkv comme extension
     chemin_sortie = normaliser_chemin(os.path.join(dossier_sortie, fichier_sortie))
 
@@ -126,12 +126,7 @@ def lancer_encodage_avec_gui(
         )
 
         # Sélection des sous-titres selon le preset
-        subtitle_tracks, burn_track, resultats = analyser_sous_titres_francais(
-            fichier, preset
-        )
-
-        # Préparer les options des sous-titres forcés
-        burn_option = "--subtitle-burned=2" if burn_track is not None else ""
+        subtitle_tracks, burn_track, _ = analyser_sous_titres_francais(fichier, preset)
 
         # Vérifier si le preset est VO pour forcer le sous-titrage verbal
         if "VO" in preset:
@@ -148,8 +143,6 @@ def lancer_encodage_avec_gui(
                 if signals and hasattr(signals, "encoding_done"):
                     signals.encoding_done.emit()
                 return False
-            else:
-                burn_option = "--subtitle-burned=1"
 
         # Vérifier si il y a des sous-titres à inclure sinon afficher un avertissement
         if subtitle_tracks is None and burn_track is None:
@@ -158,11 +151,19 @@ def lancer_encodage_avec_gui(
             )
 
         # Préparer les options des sous-titres
-        subtitle_option = (
-            f"--subtitle={subtitle_tracks},{burn_track}"
-            if subtitle_tracks is not None and burn_track is not None
-            else f"--subtitle={subtitle_tracks}" if subtitle_tracks is not None else ""
-        )
+        subtitle_option = "--subtitle=none"
+        burn_option = None
+
+        if subtitle_tracks is not None:
+            subtitle_option = f"--subtitle={subtitle_tracks}"
+            if "VO" in preset:
+                burn_option = "--subtitle-burned=1"
+            elif burn_track is not None:
+                subtitle_option = f"--subtitle={subtitle_tracks},{burn_track}"
+                burn_option = "--subtitle-burned=2"
+        elif burn_track is not None:
+            subtitle_option = f"--subtitle={burn_track}"
+            burn_option = "--subtitle-burned=1"
 
         # Construire la commande complète
         handbrake_cmd = [
@@ -182,7 +183,7 @@ def lancer_encodage_avec_gui(
             handbrake_cmd.append(audio_option)
         if subtitle_option:
             handbrake_cmd.append(subtitle_option)
-        if burn_option:
+        if burn_option is not None:
             handbrake_cmd.append(burn_option)
 
         # Ajouter les paramètres d'encodage audio
