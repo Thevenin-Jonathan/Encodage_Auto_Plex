@@ -351,13 +351,13 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
                     if track.get("Title"):
                         collect_subtitle_title(
                             track.get("Title"),
-                            language=track.get("Language"),
+                            language=track.get("Language", ""),
                             additional_info={
-                                "StreamSize": track.get("StreamSize"),
-                                "ElementCount": track.get("ElementCount"),
-                                "Duration": track.get("Duration"),
-                                "Forced": track.get("Forced"),
-                                "Default": track.get("Default"),
+                                "StreamSize": track.get("StreamSize", ""),
+                                "ElementCount": track.get("ElementCount", ""),
+                                "Duration": track.get("Duration", ""),
+                                "Forced": track.get("Forced", ""),
+                                "Default": track.get("Default", ""),
                             },
                         )
 
