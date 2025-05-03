@@ -2,6 +2,7 @@ import os
 import subprocess
 import json
 
+from subtitle_collector import collect_subtitle_title
 from logger import setup_logger
 
 # Configuration du logger
@@ -345,6 +346,20 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
                     duree = float(duree_raw) if duree_raw is not None else None
                     est_force = track.get("Forced") == "Yes"
                     est_force_colore = False
+
+                    # Collecter le titre pour analyse future
+                    if track.get("Title"):
+                        collect_subtitle_title(
+                            track.get("Title"),
+                            language=track.get("Language"),
+                            additional_info={
+                                "StreamSize": track.get("StreamSize"),
+                                "ElementCount": track.get("ElementCount"),
+                                "Duration": track.get("Duration"),
+                                "Forced": track.get("Forced"),
+                                "Default": track.get("Default"),
+                            },
+                        )
 
                     # Calculer les métriques dérivées seulement si les valeurs existent
                     if duree and duree > 0:
