@@ -202,6 +202,126 @@ class TestSubtitleAnalyzer(unittest.TestCase):
             }
         }
 
+        # Avec sous-titres français sans taille, elementCount ou durée
+        self.info_pistes4 = {
+            "media": {
+                "track": [
+                    {"@type": "General", "Title": "Test Video"},
+                    {"@type": "Video", "Width": "1920"},
+                    {"@type": "Audio", "Language": "fra", "ID": "1"},
+                    {
+                        "@type": "Text",
+                        "Language": "fra",
+                        "Title": "français",
+                        "ID": "2",
+                    },
+                    {
+                        "@type": "Text",
+                        "Language": "fra",
+                        "Title": "French [ForcedNarrative]",
+                        "ID": "5",
+                    },
+                ]
+            }
+        }
+
+        # Avec sous-titres sans titre, taille, elementCount ou durée mais avec Forced
+        self.info_pistes5 = {
+            "media": {
+                "track": [
+                    {"@type": "General", "Title": "Test Video"},
+                    {"@type": "Video", "Width": "1920"},
+                    {"@type": "Audio", "Language": "fra", "ID": "1"},
+                    {
+                        "@type": "Text",
+                        "Language": "fra",
+                        "Title": "",
+                        "ID": "2",
+                        "Forced": "No",
+                    },
+                    {
+                        "@type": "Text",
+                        "Language": "fra",
+                        "Title": "",
+                        "ID": "5",
+                        "Forced": "Yes",
+                    },
+                ]
+            }
+        }
+
+        # Cas avec sous-titres full, forcés, forcés coloré, plus malentendants
+        self.info_pistes6 = {
+            "media": {
+                "track": [
+                    {"@type": "General", "Title": "Test Video"},
+                    {"@type": "Video", "Width": "1920"},
+                    {"@type": "Audio", "Language": "fra", "ID": "1"},
+                    {
+                        "@type": "Text",
+                        "Language": "fra",
+                        "Title": "ForcedColored",
+                        "ID": "1",
+                        "@typeorder": "1",
+                        "StreamSize": "1000",
+                        "ElementCount": "5",
+                        "Duration": "3600",
+                        "Forced": "Yes",
+                    },
+                    {
+                        "@type": "Text",
+                        "Language": "fra",
+                        "Title": "Forced",
+                        "ID": "2",
+                        "@typeorder": "2",
+                        "StreamSize": "900",
+                        "ElementCount": "5",
+                        "Duration": "3600",
+                        "Forced": "Yes",
+                    },
+                    {
+                        "@type": "Text",
+                        "Language": "fra",
+                        "Title": "Full",
+                        "ID": "3",
+                        "@typeorder": "3",
+                        "StreamSize": "12000",
+                        "ElementCount": "600",
+                        "Duration": "3600",
+                    },
+                    {
+                        "@type": "Text",
+                        "Language": "fra",
+                        "Title": "SDH",
+                        "ID": "5",
+                        "@typeorder": "5",
+                        "StreamSize": "15000",
+                        "ElementCount": "650",
+                        "Duration": "3600",
+                    },
+                ]
+            }
+        }
+        # Uniquement des sous-titres français SDH
+        self.info_pistes7 = {
+            "media": {
+                "track": [
+                    {"@type": "General", "Title": "Test Video"},
+                    {"@type": "Video", "Width": "1920"},
+                    {"@type": "Audio", "Language": "fra", "ID": "1"},
+                    {
+                        "@type": "Text",
+                        "Language": "fra",
+                        "Title": "SDH",
+                        "ID": "5",
+                        "StreamSize": "12000",
+                        "ElementCount": "600",
+                        "Duration": "3600",
+                    },
+                ]
+            }
+        }
+
         # Cas avec code de langue "und" (undefined)
         self.info_pistes8 = {
             "media": {
@@ -315,37 +435,63 @@ class TestSubtitleAnalyzer(unittest.TestCase):
 
         # Test avec info_pistes1
         mock_mediainfo.return_value = self.info_pistes1
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste1.mkv", preset)
         self.assertEqual(verbal, 2)  # Index du sous-titre verbal
         self.assertIsNone(non_verbal)  # Pas de sous-titre non-verbal
 
         # Test avec info_pistes2
         mock_mediainfo.return_value = self.info_pistes2
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste2.mkv", preset)
         self.assertEqual(verbal, 3)  # Index du sous-titre verbal normal
         self.assertEqual(non_verbal, 1)  # Index du sous-titre forcé
 
         # Test avec info_pistes3 (caractères spéciaux)
         mock_mediainfo.return_value = self.info_pistes3
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste3.mkv", preset)
         self.assertEqual(verbal, 1)  # Index du sous-titre verbal normal
         self.assertEqual(non_verbal, 2)  # Index du sous-titre forcé
 
+        # Test avec info_pistes4 (sans taille, elementCount ou durée)
+        mock_mediainfo.return_value = self.info_pistes4
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste4.mkv", preset)
+        self.assertEqual(verbal, 1)  # Index du sous-titre verbal
+        self.assertEqual(non_verbal, 2)  # Index du sous-titre forcé
+
+        # Test avec info_pistes5 (sans titre, taille, elementCount ou durée mais avec Forced)
+        mock_mediainfo.return_value = self.info_pistes5
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste5.mkv", preset)
+        self.assertEqual(verbal, 1)  # Index du sous-titre verbal
+        self.assertEqual(
+            non_verbal, 2
+        )  # Index du sous-titre forcé selectionné grace à "Forced"
+
+        # Test avec info_pistes6 (sous-titres full, forcés, forcés coloré, plus malentendants)
+        mock_mediainfo.return_value = self.info_pistes6
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste6.mkv", preset)
+        self.assertEqual(verbal, 3)  # Index du sous-titre verbal
+        self.assertEqual(non_verbal, 2)  # Index du sous-titre forcé
+
+        # Test avec info_pistes7 (sous-titres full, forcés, forcés coloré, plus malentendants)
+        mock_mediainfo.return_value = self.info_pistes7
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste7.mkv", preset)
+        self.assertEqual(verbal, 1)  # Sous-titre SDH verbaux
+        self.assertIsNone(non_verbal)  # Pas de sous titre forcé
+
         # Test avec info_pistes8 (langue indéfinie)
         mock_mediainfo.return_value = self.info_pistes8
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste8.mkv", preset)
         self.assertIsNone(verbal)  # Devrait reconnaître "Full" comme verbal
         self.assertIsNone(non_verbal)  # Devrait reconnaître "Forced" comme non verbal
 
         # Test avec info_pistes9 (noms mixtes)
         mock_mediainfo.return_value = self.info_pistes9
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste9.mkv", preset)
         self.assertEqual(verbal, 1)  # Devrait choisir le premier sous-titre français
         self.assertIsNone(non_verbal)  # Pas de sous-titre forcé
 
         # Test avec info_pistes10 (données anormales)
         mock_mediainfo.return_value = self.info_pistes10
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste10.mkv", preset)
         self.assertEqual(verbal, 1)  # Devrait reconnaître le premier comme verbal
         self.assertEqual(
             non_verbal, 2
@@ -360,7 +506,7 @@ class TestSubtitleAnalyzer(unittest.TestCase):
 
         # Test avec info_pistes1
         mock_mediainfo.return_value = self.info_pistes1
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste1.mkv", preset)
         self.assertEqual(
             verbal, 2
         )  # Index du sous-titre verbal à intégrer dans la vidéo
@@ -368,7 +514,7 @@ class TestSubtitleAnalyzer(unittest.TestCase):
 
         # Test avec info_pistes2
         mock_mediainfo.return_value = self.info_pistes2
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste2.mkv", preset)
         self.assertEqual(verbal, 3)  # Index du sous-titre verbal normal
         self.assertIsNone(
             non_verbal
@@ -376,15 +522,47 @@ class TestSubtitleAnalyzer(unittest.TestCase):
 
         # Test avec info_pistes3 (caractères spéciaux)
         mock_mediainfo.return_value = self.info_pistes3
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste3.mkv", preset)
         self.assertEqual(verbal, 1)  # Index du sous-titre verbal normal
+        self.assertIsNone(
+            non_verbal
+        )  # Ignore les sous-titres non-verbal avec le preset VO
+
+        # Test avec info_pistes4 (sans taille, elementCount ou durée)
+        mock_mediainfo.return_value = self.info_pistes4
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste4.mkv", preset)
+        self.assertEqual(verbal, 1)  # Index du sous-titre verbal
+        self.assertIsNone(
+            non_verbal
+        )  # Ignore les sous-titres non-verbal avec le preset VO
+
+        # Test avec info_pistes5 (sans titre, taille, elementCount ou durée mais avec Forced)
+        mock_mediainfo.return_value = self.info_pistes5
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste5.mkv", preset)
+        self.assertEqual(verbal, 1)  # Index du sous-titre verbal
+        self.assertIsNone(
+            non_verbal
+        )  # Ignore les sous-titres non-verbal avec le preset VO
+
+        # Test avec info_pistes6 (sous-titres full, forcés, forcés coloré, plus malentendants)
+        mock_mediainfo.return_value = self.info_pistes6
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste6.mkv", preset)
+        self.assertEqual(verbal, 3)  # Index du sous-titre verbal
+        self.assertIsNone(
+            non_verbal
+        )  # Ignore les sous-titres non-verbal avec le preset VO
+
+        # Test avec info_pistes7 (sous-titres full, forcés, forcés coloré, plus malentendants)
+        mock_mediainfo.return_value = self.info_pistes7
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste7.mkv", preset)
+        self.assertEqual(verbal, 1)  # Sous-titre SDH verbaux
         self.assertIsNone(
             non_verbal
         )  # Ignore les sous-titres non-verbal avec le preset VO
 
         # Test avec info_pistes8 (langue indéfinie)
         mock_mediainfo.return_value = self.info_pistes8
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste8.mkv", preset)
         self.assertIsNone(verbal)  # None car "Full" est de type de language undefined
         self.assertIsNone(
             non_verbal
@@ -392,7 +570,7 @@ class TestSubtitleAnalyzer(unittest.TestCase):
 
         # Test avec info_pistes9 (noms mixtes)
         mock_mediainfo.return_value = self.info_pistes9
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste9.mkv", preset)
         self.assertEqual(verbal, 1)  # Devrait choisir le premier sous-titre français
         self.assertIsNone(
             non_verbal
@@ -400,7 +578,7 @@ class TestSubtitleAnalyzer(unittest.TestCase):
 
         # Test avec info_pistes10 (données anormales)
         mock_mediainfo.return_value = self.info_pistes10
-        verbal, non_verbal, _ = analyser_sous_titres_francais("dummy_file.mkv", preset)
+        verbal, non_verbal, _ = analyser_sous_titres_francais("piste10.mkv", preset)
         self.assertEqual(verbal, 1)  # Devrait reconnaître le premier comme verbal
         self.assertIsNone(
             non_verbal
