@@ -333,39 +333,81 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
 
                 # Calculer des métriques pour aider à déterminer le type
                 try:
-                    taille = int(track.get("StreamSize", "0"))
-                    elements = int(track.get("ElementCount", "0"))
+                    # Utiliser None comme valeur par défaut pour détecter l'absence d'attributs
+                    taille_raw = track.get("StreamSize")
+                    elements_raw = track.get("ElementCount")
+                    duree_raw = track.get("Duration")
+
+                    # Convertir seulement si les valeurs existent
+                    titre_lower = track.get("Title", "").lower()
+                    taille = int(taille_raw) if taille_raw is not None else None
+                    elements = int(elements_raw) if elements_raw is not None else None
+                    duree = float(duree_raw) if duree_raw is not None else None
                     est_force = track.get("Forced") == "Yes"
-                    duree = float(track.get("Duration", "0"))
+                    est_force_colore = False
 
-                    # Densité d'éléments par minute
-                    elements_par_minute = elements / (duree / 60) if duree > 0 else 0
+                    # Calculer les métriques dérivées seulement si les valeurs existent
+                    if duree and duree > 0:
+                        elements_par_minute = (
+                            elements / (duree / 60) if elements is not None else None
+                        )
+                    else:
+                        elements_par_minute = None
 
-                    # Taille moyenne par élément
-                    taille_par_element = taille / elements if elements > 0 else 0
+                    if elements and elements > 0:
+                        taille_par_element = (
+                            taille / elements if taille is not None else None
+                        )
+                    else:
+                        taille_par_element = None
 
                 except (ValueError, ZeroDivisionError):
-                    elements = 0
-                    taille = 0
-                    elements_par_minute = 0
-                    taille_par_element = 0
+                    elements = None
+                    taille = None
+                    elements_par_minute = None
+                    taille_par_element = None
 
                 # Classifier le type de sous-titre
                 type_sous_titre = "inconnu"
 
-                # Sous-titres forcés (typiquement peu d'éléments, petite taille, marqués comme forcés)
-                if est_force or (elements < 20 and taille < 1000):
+                # Vérifier si le titre contient des mots spécifiques pour les sous-titres forcés (prioritaire)
+                if est_force or any(
+                    mot in titre_lower for mot in ["forced", "force", "forcé", "forcè"]
+                ):
                     type_sous_titre = "non_verbal"
-                # Sous-titres verbaux complets (beaucoup d'éléments, grande taille)
-                elif elements > 100 or taille > 10000:
+                    if any(mot in titre_lower for mot in ["color", "colour"]):
+                        est_force_colore = True
+
+                # Vérifier d'abord le titre
+                elif any(
+                    mot in titre_lower
+                    for mot in [
+                        "français",
+                        "francais",
+                        "french",
+                        "vff",
+                        "full",
+                        "complet",
+                    ]
+                ):
                     type_sous_titre = "verbal"
-                # Cas intermédiaires
-                else:
-                    # Analyser la densité d'éléments et la taille moyenne
-                    if elements_par_minute > 5:
-                        type_sous_titre = "verbal"
-                    else:
+                # Sous-titres forcés (typiquement peu d'éléments, petite taille, )
+                elif taille is not None and elements is not None:
+                    # Sous-titres forcés (peu d'éléments, petite taille)
+                    if elements < 20 and taille < 1000:
                         type_sous_titre = "non_verbal"
+                    # Sous-titres verbaux (beaucoup d'éléments, grande taille)
+                    elif elements > 100 or taille > 10000:
+                        type_sous_titre = "verbal"
+                    # Cas intermédiaires avec densité d'éléments
+                    elif elements_par_minute is not None:
+                        if elements_par_minute > 5:
+                            type_sous_titre = "verbal"
+                        else:
+                            type_sous_titre = "non_verbal"
+                # Si la taille ou le nombre d'éléments est manquant, on ne peut pas déterminer le type
+                else:
+                    type_sous_titre = "verbal"
 
                 # Récupérer l'index du sous-titre (à partir de 1)
                 track_id = track.get("ID", "")
@@ -377,12 +419,21 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
                         "ID_Track": track_id,
                         "Index_Sous_Titre": index,
                         "Format": track.get("Format", "Non spécifié"),
-                        "Taille": taille,
-                        "Elements": elements,
-                        "Elements_Par_Minute": round(elements_par_minute, 2),
-                        "Taille_Par_Element": round(taille_par_element, 2),
-                        "Durée": duree,
+                        "Taille": taille if taille is not None else 0,
+                        "Elements": elements if elements is not None else 0,
+                        "Elements_Par_Minute": (
+                            round(elements_par_minute, 2)
+                            if elements_par_minute is not None
+                            else 0
+                        ),
+                        "Taille_Par_Element": (
+                            round(taille_par_element, 2)
+                            if taille_par_element is not None
+                            else 0
+                        ),
+                        "Durée": duree if duree is not None else 0,
                         "Est_forcé": est_force,
+                        "Est_Forcé_Coloré": est_force_colore,
                         "Est_Malentendant": est_malentendant,
                         "Type": type_sous_titre,
                         "Titre": track.get("Title", ""),
@@ -404,6 +455,12 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
                 (
                     -1 if x["Type"] == "verbal" else 1
                 ),  # Ensuite par type (verbal en premier)
+                # Pénaliser les forcés colorés par rapport aux forcés simples
+                (
+                    1
+                    if x["Type"] == "non_verbal" and x.get("Est_Forcé_Coloré", False)
+                    else 0
+                ),
                 -x["Taille"],  # Enfin par taille (décroissant)
             )
         )
@@ -479,15 +536,36 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
             resultat["recommandations"]["index_verbal"] = st["Index_Sous_Titre"]
             index_verbal_recommande = st["Index_Sous_Titre"]
 
+        # Séparer les sous-titres non verbaux en forcés simples et forcés colorés
+        sous_titres_forces_simples = [
+            st
+            for st in sous_titres_standards_non_verbaux
+            if not st.get("Est_Forcé_Coloré", False)
+        ]
+        sous_titres_forces_colores = [
+            st
+            for st in sous_titres_standards_non_verbaux
+            if st.get("Est_Forcé_Coloré", False)
+        ]
+
         # Recommandation pour les sous-titres non verbaux
         if "VO" in preset:
             # Pour les presets VO, on ne veut pas de sous-titres non verbaux
             index_non_verbal_recommande = None
             resultat["recommandations"]["piste_non_verbale"] = None
             resultat["recommandations"]["index_non_verbal"] = None
-        elif sous_titres_standards_non_verbaux:
+        # Priorité aux forcés simples s'ils existent
+        elif sous_titres_forces_simples:
             st = sorted(
-                sous_titres_standards_non_verbaux, key=lambda x: -x["Priorité_Variante"]
+                sous_titres_forces_simples, key=lambda x: -x["Priorité_Variante"]
+            )[0]
+            resultat["recommandations"]["piste_non_verbale"] = st["ID_Track"]
+            resultat["recommandations"]["index_non_verbal"] = st["Index_Sous_Titre"]
+            index_non_verbal_recommande = st["Index_Sous_Titre"]
+        # Sinon, utiliser les forcés colorés
+        elif sous_titres_forces_colores:
+            st = sorted(
+                sous_titres_forces_colores, key=lambda x: -x["Priorité_Variante"]
             )[0]
             resultat["recommandations"]["piste_non_verbale"] = st["ID_Track"]
             resultat["recommandations"]["index_non_verbal"] = st["Index_Sous_Titre"]
