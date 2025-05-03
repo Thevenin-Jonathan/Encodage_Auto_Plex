@@ -110,10 +110,6 @@ def surveille_dossiers(
                                     # Sauvegarder l'état des encodages interrompus
                                     # L'encodage en cours est None car on vient d'ajouter un fichier à la queue
                                     save_interrupted_encodings(None, queue_items)
-                                    if debug_mode:
-                                        logger.debug(
-                                            "État des encodages sauvegardé après ajout à la file d'attente"
-                                        )
                         else:
                             logger.error(
                                 f"Le fichier {fichier} n'est plus accessible, ignoré"
