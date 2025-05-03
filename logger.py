@@ -3,6 +3,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 import datetime
 import sys
+import glob
+import re
 
 # Définir le chemin de base en fonction de l'exécution en tant que script ou exécutable
 if getattr(sys, "frozen", False):
@@ -50,6 +52,9 @@ def setup_logger(name):
     # Ajouter uniquement le handler pour le fichier
     logger.addHandler(file_handler)
 
+    # Nettoyer les anciens fichiers de logs (garder 7 jours)
+    cleanup_old_logs(logs_dir, max_days=7)
+
     return logger
 
 
@@ -61,3 +66,39 @@ def colored_log(logger, message, level="INFO", color=None):
     )
     record.custom_color = color
     logger.handle(record)
+
+
+def cleanup_old_logs(logs_dir, max_days=7):
+    """
+    Nettoie les anciens fichiers de logs.
+
+    Args:
+        logs_dir: Répertoire contenant les logs
+        max_days: Nombre maximum de jours à conserver
+    """
+    try:
+        today = datetime.date.today()
+        pattern = os.path.join(logs_dir, "encodage_*.log*")
+        log_files = glob.glob(pattern)
+
+        for log_file in log_files:
+            # Extraire la date du nom de fichier
+            match = re.search(r"encodage_(\d{4}-\d{2}-\d{2})\.log", log_file)
+            if match:
+                try:
+                    file_date = datetime.datetime.strptime(
+                        match.group(1), "%Y-%m-%d"
+                    ).date()
+                    # Calculer l'âge en jours
+                    age = (today - file_date).days
+
+                    # Supprimer si plus vieux que max_days
+                    if age > max_days:
+                        os.remove(log_file)
+                        print(f"Log ancien supprimé: {log_file}")
+                except Exception as e:
+                    print(
+                        f"Erreur lors de l'analyse de la date du fichier {log_file}: {e}"
+                    )
+    except Exception as e:
+        print(f"Erreur lors du nettoyage des logs: {e}")
