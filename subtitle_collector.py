@@ -1,24 +1,12 @@
 import os
 import json
+import sys
 from datetime import datetime
 from logger import setup_logger
+from constants import fichier_sous_titres
 
 # Configuration du logger
 logger = setup_logger(__name__)
-
-
-# Déterminer le chemin du dossier data
-def get_data_dir():
-    """Retourne le chemin du dossier data"""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    data_dir = os.path.join(base_dir, "datas")
-
-    # Créer le dossier s'il n'existe pas
-    if not os.path.exists(data_dir):
-        os.makedirs(data_dir)
-        logger.debug(f"Dossier de données créé: {data_dir}")
-
-    return data_dir
 
 
 class SubtitleTitleCollector:
@@ -27,16 +15,21 @@ class SubtitleTitleCollector:
     Permet de sauvegarder les titres non encore rencontrés dans un fichier JSON.
     """
 
-    def __init__(self, collection_filename="subtitle_titles_collection.json"):
+    def __init__(self, collection_filename=None):
         """
         Initialise le collecteur avec le fichier de collection spécifié.
 
         Args:
-            collection_file: Chemin vers le fichier JSON de collection des titres
+            collection_filename: Nom du fichier JSON de collection des titres (ignoré si None)
         """
-        # Construire le chemin complet vers le fichier dans le dossier data
-        data_dir = get_data_dir()
-        self.collection_file = os.path.join(data_dir, collection_filename)
+        # Utiliser directement le chemin complet défini dans constants.py
+        if collection_filename is None:
+            self.collection_file = fichier_sous_titres
+        else:
+            # Pour des cas particuliers où on veut un fichier différent
+            self.collection_file = os.path.join(
+                os.path.dirname(fichier_sous_titres), collection_filename
+            )
         self.titles = self._load_existing_titles()
 
     def _load_existing_titles(self):

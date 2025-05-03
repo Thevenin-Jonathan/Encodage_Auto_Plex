@@ -35,6 +35,11 @@ fichier_presets = os.path.join(BASE_PATH, "datas", "custom_presets.json")
 fichier_sauvegarde = os.path.join(BASE_PATH, "datas", "fichiers_detectes.json")
 fichier_encodes = os.path.join(BASE_PATH, "datas", "fichiers_encodes.json")
 
+# Fichier qui enregistre les titres de sous-titres collectés
+fichier_sous_titres = os.path.join(
+    BASE_PATH, "datas", "subtitle_titles_collection.json"
+)
+
 # Extensions de fichiers à surveiller
 extensions = [".mkv", ".mp4", ".avi"]
 
