@@ -1,5 +1,10 @@
 from utils import horodatage, enlever_accents
 from constants import criteres_audios
+import json
+from logger import setup_logger
+
+# Configuration du logger
+logger = setup_logger(__name__)
 
 
 def selectionner_pistes_audio(info_pistes, preset):
@@ -14,6 +19,38 @@ def selectionner_pistes_audio(info_pistes, preset):
     Une liste des numéros de pistes des pistes audio sélectionnées, ou None si aucune piste valide n'est trouvée.
     """
     pistes_audio_selectionnees = []
+
+    # Log debug de l'analyse des pistes audio
+    if "TitleList" not in info_pistes or not info_pistes["TitleList"]:
+        logger.debug("Aucune liste de titres trouvée dans les informations des pistes")
+        return None
+
+    if "AudioList" not in info_pistes["TitleList"][0]:
+        logger.debug("Aucune liste de pistes audio trouvée")
+        return None
+
+    # Affichage détaillé de chaque piste audio
+    audio_tracks = info_pistes["TitleList"][0]["AudioList"]
+    logger.debug(f"Nombre total de pistes audio détectées: {len(audio_tracks)}")
+
+    for i, track in enumerate(audio_tracks):
+        # Création d'un dictionnaire propre pour le log
+        track_info = {
+            "Position": i + 1,
+            "TrackNumber": track.get("TrackNumber", "N/A"),
+            "LanguageCode": track.get("LanguageCode", "N/A"),
+            "Language": track.get("Language", "N/A"),
+            "Name": track.get("Name", "N/A"),
+            "Format": track.get("Format", "N/A"),
+            "SampleRate": track.get("SampleRate", "N/A"),
+            "BitRate": track.get("BitRate", "N/A"),
+            "Channels": track.get("Channels", "N/A"),
+            "Default": track.get("Default", "N/A"),
+        }
+
+        # Convertir en JSON pour une meilleure lisibilité
+        track_json = json.dumps(track_info, indent=2, ensure_ascii=False)
+        logger.debug(f"Piste audio #{i+1}:\n{track_json}")
 
     if preset in [
         "Dessins animes VF",
