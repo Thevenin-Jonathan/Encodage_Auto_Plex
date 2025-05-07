@@ -190,7 +190,7 @@ def lancer_encodage_avec_gui(
         handbrake_cmd.extend(["--aencoder=aac", "--ab=192", "--mixdown=5point1"])
 
         if debug_mode:
-            logger.info(f"Exécution de la commande: {' '.join(handbrake_cmd)}")
+            logger.debug(f"Exécution de la commande: {' '.join(handbrake_cmd)}")
             print(f"{horodatage()} 🔧 Commande d'encodage : {' '.join(handbrake_cmd)}")
 
         # Exécuter HandBrake
