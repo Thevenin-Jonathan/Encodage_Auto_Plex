@@ -407,7 +407,7 @@ class MainWindow(QMainWindow):
         control_buttons_layout.addWidget(self.skip_button)
 
         self.stop_button = QPushButton("Stopper tout")
-        self.stop_button.setStyleSheet("background-color: #ff6b6b;")
+        self.stop_button.setStyleSheet("background-color: #A94442;")
         control_buttons_layout.addWidget(self.stop_button)
 
         main_layout.addLayout(control_buttons_layout)
@@ -432,7 +432,7 @@ class MainWindow(QMainWindow):
             "Ajouter un fichier ou dossier à la file d'attente"
         )
         self.queue_add_btn.clicked.connect(self.add_to_queue)
-        self.queue_add_btn.setStyleSheet("background-color: #4dabf7;")
+        self.queue_add_btn.setStyleSheet("background-color: #3A6EA5;")
         queue_buttons_layout.addWidget(self.queue_add_btn)
 
         # Ordre des boutons selon la demande: descendre, monter, supprimer, tout en bas, tout en haut, supprimer tout
@@ -465,12 +465,12 @@ class MainWindow(QMainWindow):
             "Supprimer l'élément sélectionné de la file d'attente"
         )
         self.queue_delete_btn.clicked.connect(self.delete_queue_item)
-        self.queue_delete_btn.setStyleSheet("background-color: #ff6b6b;")
+        self.queue_delete_btn.setStyleSheet("background-color: #A94442;")
         queue_buttons_layout.addWidget(self.queue_delete_btn)
 
         self.queue_clear_btn = QPushButton("TOUT Supprimer")
         self.queue_clear_btn.setToolTip("Vider la file d'attente")
-        self.queue_clear_btn.setStyleSheet("background-color: #ff6b6b;")
+        self.queue_clear_btn.setStyleSheet("background-color: #A94442;")
         self.queue_clear_btn.clicked.connect(self.clear_queue)
         queue_buttons_layout.addWidget(self.queue_clear_btn)
 
@@ -493,19 +493,26 @@ class MainWindow(QMainWindow):
         self.refresh_manual_btn = QPushButton("Rafraîchir")
         self.refresh_manual_btn.clicked.connect(self.load_manual_encodings)
 
+        # Ajouter un bouton Modifier pour éditer les pistes audio et sous-titres
+        self.edit_tracks_btn = QPushButton("Modifier")
+        self.edit_tracks_btn.setToolTip("Modifier les pistes audio et sous-titres")
+        self.edit_tracks_btn.clicked.connect(self.open_track_editor)
+        self.edit_tracks_btn.setStyleSheet("background-color: #4A7C59;")
+
         self.locate_file_btn = QPushButton("Localiser fichier")
         self.locate_file_btn.clicked.connect(self.locate_selected_file)
-        self.locate_file_btn.setStyleSheet("background-color: #4dabf7;")
+        self.locate_file_btn.setStyleSheet("background-color: #3A6EA5;")
 
         self.delete_selected_btn = QPushButton("Supprimer")
         self.delete_selected_btn.clicked.connect(self.delete_selected_encodings)
-        self.delete_selected_btn.setStyleSheet("background-color: #ff6b6b;")
+        self.delete_selected_btn.setStyleSheet("background-color: #A94442;")
 
         self.delete_all_btn = QPushButton("TOUT supprimer")
         self.delete_all_btn.clicked.connect(self.delete_all_encodings)
-        self.delete_all_btn.setStyleSheet("background-color: #ff6b6b;")
+        self.delete_all_btn.setStyleSheet("background-color: #A94442;")
 
         manual_buttons_layout.addWidget(self.refresh_manual_btn)
+        manual_buttons_layout.addWidget(self.edit_tracks_btn)
         manual_buttons_layout.addWidget(self.locate_file_btn)
         manual_buttons_layout.addWidget(self.delete_selected_btn)
         manual_buttons_layout.addWidget(self.delete_all_btn)
@@ -1466,3 +1473,45 @@ class MainWindow(QMainWindow):
         else:
             # Essayer de restaurer la position précise
             scrollbar.setValue(scroll_position)
+
+    def open_track_editor(self):
+        """Ouvre la fenêtre d'édition des pistes audio et sous-titres pour le fichier sélectionné"""
+        selected_items = self.manual_list.selectedItems()
+        if not selected_items:
+            self.add_log("Aucun fichier sélectionné", "WARNING", "orange")
+            return
+
+        # Utiliser le premier élément sélectionné
+        selected_text = selected_items[0].text()
+
+        try:
+            # Si le format est "chemin_complet|preset"
+            if "|" in selected_text:
+                filepath = selected_text.split("|")[0]
+            else:
+                # Si c'est juste le nom du fichier, impossible de localiser
+                self.add_log(
+                    "Impossible d'ouvrir l'éditeur (chemin complet non disponible)",
+                    "ERROR",
+                    "red",
+                )
+                return
+
+            # Vérifier si le fichier existe
+            if not os.path.exists(filepath):
+                self.add_log(f"Le fichier n'existe pas: {filepath}", "ERROR", "red")
+                return
+
+            # Importer la classe éditeur de pistes
+            from track_editor import TrackEditorDialog
+
+            # Créer et afficher la fenêtre d'édition
+            editor = TrackEditorDialog(filepath, parent=self)
+            editor.exec_()
+
+        except Exception as e:
+            self.add_log(
+                f"Erreur lors de l'ouverture de l'éditeur de pistes: {str(e)}",
+                "ERROR",
+                "red",
+            )
