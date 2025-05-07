@@ -284,6 +284,11 @@ class MainWindow(QMainWindow):
         self.resize(1400, 800)
         config = load_config()
 
+        # Variable pour suivre si les logs de debug doivent être affichés
+        self.show_debug_logs = False
+        # Stocker les logs récents pour pouvoir les filtrer
+        self.recent_logs = []
+
         # Créer un splitter comme widget central
         self.splitter = QSplitter(Qt.Horizontal)
         self.setCentralWidget(self.splitter)
@@ -360,12 +365,20 @@ class MainWindow(QMainWindow):
         self.show_logs_button.setMinimumWidth(120)  # Largeur minimale en pixels
         logs_buttons_layout.addWidget(self.show_logs_button)
 
+        # Bouton pour afficher/masquer les logs de debug
+        self.toggle_debug_button = QPushButton("Afficher\nlogs debug")
+        self.toggle_debug_button.setToolTip("Afficher/masquer les logs de debug")
+        self.toggle_debug_button.clicked.connect(self.toggle_debug_logs)
+        self.toggle_debug_button.setMinimumHeight(75)  # Hauteur minimale en pixels
+        self.toggle_debug_button.setMinimumWidth(120)  # Largeur minimale en pixels
+        logs_buttons_layout.addWidget(self.toggle_debug_button)
+
         # Bouton pour charger les anciens logs
-        self.load_old_logs_button = QPushButton("Charger les\nanciens log")
+        self.load_old_logs_button = QPushButton("Charger les\nanciens logs")
         self.load_old_logs_button.setToolTip("Charger le dernier fichier de logs")
         self.load_old_logs_button.clicked.connect(self.load_last_log)
-        self.show_logs_button.setMinimumHeight(75)  # Hauteur minimale en pixels
-        self.show_logs_button.setMinimumWidth(120)  # Largeur minimale en pixels
+        self.load_old_logs_button.setMinimumHeight(75)  # Hauteur minimale en pixels
+        self.load_old_logs_button.setMinimumWidth(120)  # Largeur minimale en pixels
         logs_buttons_layout.addWidget(self.load_old_logs_button)
 
         # Ajouter le layout vertical au layout horizontal
@@ -691,14 +704,25 @@ class MainWindow(QMainWindow):
         # Utiliser la couleur personnalisée si fournie, sinon celle du niveau
         color = custom_color if custom_color else color_map.get(level, "black")
 
-        # Ajouter le message au panneau de logs
-        self.logs_panel.log_text.append(
-            f"<span style='color:{color};'>{message}</span>"
-        )
+        # Stocker le log dans notre historique récent
+        self.recent_logs.append((message, level, custom_color))
+        # Garder seulement les 1000 derniers logs pour éviter une consommation excessive de mémoire
+        if len(self.recent_logs) > 1000:
+            self.recent_logs.pop(0)
 
-        # Auto-scroll to bottom
-        sb = self.logs_panel.log_text.verticalScrollBar()
-        sb.setValue(sb.maximum())
+        # Si c'est un log de debug et qu'ils sont masqués, ne pas l'afficher
+        if level == "DEBUG" and not self.show_debug_logs:
+            return
+
+        # Ajouter le message au panneau de logs
+        if hasattr(self, "logs_panel"):
+            self.logs_panel.log_text.append(
+                f"<span style='color:{color};'>{message}</span>"
+            )
+
+            # Auto-scroll to bottom
+            sb = self.logs_panel.log_text.verticalScrollBar()
+            sb.setValue(sb.maximum())
 
     def update_queue(self, queue_files):
         """Met à jour la liste des encodages en attente"""
@@ -1392,3 +1416,53 @@ class MainWindow(QMainWindow):
                     found_files.append(full_path)
 
         return found_files
+
+    def toggle_debug_logs(self):
+        """Affiche ou masque les logs de debug"""
+        self.show_debug_logs = not self.show_debug_logs
+
+        # Recharger les logs avec le nouveau filtre
+        self.refresh_logs_display()
+
+    def refresh_logs_display(self):
+        """Rafraîchit l'affichage des logs selon le filtre actuel"""
+        if not hasattr(self, "logs_panel") or not self.logs_panel_visible:
+            return
+
+        # Sauvegarder la position du curseur actuel
+        scrollbar = self.logs_panel.log_text.verticalScrollBar()
+        scroll_position = scrollbar.value()
+
+        # Vider le contenu
+        self.logs_panel.log_text.clear()
+
+        # Réafficher les logs selon le filtre
+        for log_entry in self.recent_logs:
+            message, level, custom_color = log_entry
+
+            # Filtrer les logs de debug si nécessaire
+            if level == "DEBUG" and not self.show_debug_logs:
+                continue
+
+            # Déterminer la couleur du texte
+            color_map = {
+                "DEBUG": "gray",
+                "INFO": "white",
+                "WARNING": "orange",
+                "ERROR": "red",
+                "CRITICAL": "darkred",
+            }
+            color = custom_color if custom_color else color_map.get(level, "black")
+
+            # Ajouter le message
+            self.logs_panel.log_text.append(
+                f"<span style='color:{color};'>{message}</span>"
+            )
+
+        # Restaurer la position de défilement si elle était en bas
+        if scroll_position == scrollbar.maximum():
+            # Position tout en bas
+            scrollbar.setValue(scrollbar.maximum())
+        else:
+            # Essayer de restaurer la position précise
+            scrollbar.setValue(scroll_position)
