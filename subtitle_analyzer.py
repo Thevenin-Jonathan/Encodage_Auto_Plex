@@ -140,6 +140,39 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
                 sous_titres_index[track.get("ID", "")] = index_sous_titre
                 index_sous_titre += 1
 
+        # Log détaillé pour l'analyse initiale        )
+        logger.debug(
+            f"Nombre total de pistes de sous-titres détectées: {len(sous_titres_index)}"
+        )
+
+        # Log de toutes les pistes de sous-titres (Text) trouvées
+        subtitle_tracks = [
+            track
+            for track in info["media"].get("track", [])
+            if track.get("@type") == "Text"
+        ]
+        logger.debug(f"Nombre de pistes de sous-titres: {len(subtitle_tracks)}")
+
+        # Affichage détaillé de chaque piste de sous-titre
+        for i, track in enumerate(subtitle_tracks):
+            # Création d'un dictionnaire propre pour le log
+            track_info = {
+                "Position": i + 1,
+                "ID": track.get("ID", "N/A"),
+                "Format": track.get("Format", "N/A"),
+                "Language": track.get("Language", "N/A"),
+                "Title": track.get("Title", "N/A"),
+                "Default": track.get("Default", "N/A"),
+                "Forced": track.get("Forced", "N/A"),
+                "StreamSize": track.get("StreamSize", "N/A"),
+                "ElementCount": track.get("ElementCount", "N/A"),
+                "Duration": track.get("Duration", "N/A"),
+            }
+
+            # Convertir en JSON pour une meilleure lisibilité
+            track_json = json.dumps(track_info, indent=2, ensure_ascii=False)
+            logger.debug(f"Piste sous-titre #{i+1}:\n{track_json}")
+
         # Langues françaises reconnues (en minuscules)
         langues_francaises = ["fr", "fre", "fra", "french", "fr-fr"]
 
