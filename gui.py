@@ -20,11 +20,14 @@ from PyQt5.QtWidgets import (
     QHeaderView,
     QCheckBox,
     QListWidgetItem,
+    QFileDialog,  # Ajout pour la boîte de dialogue de sélection de fichier
+    QComboBox,  # Ajout pour la liste déroulante de presets
+    QMessageBox,  # Ajout pour afficher des messages
 )
 from PyQt5.QtCore import Qt, QObject, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QFont
 from successful_encodings import get_recent_encodings
-from constants import fichier_encodage_manuel
+from constants import fichier_encodage_manuel, extensions, dossiers_presets
 from config import load_config
 
 
@@ -410,6 +413,15 @@ class MainWindow(QMainWindow):
         # Boutons pour manipuler la file d'attente
         queue_buttons_layout = QHBoxLayout()
 
+        # Bouton pour ajouter un fichier ou dossier à la file d'attente
+        self.queue_add_btn = QPushButton("Ajouter")
+        self.queue_add_btn.setToolTip(
+            "Ajouter un fichier ou dossier à la file d'attente"
+        )
+        self.queue_add_btn.clicked.connect(self.add_to_queue)
+        self.queue_add_btn.setStyleSheet("background-color: #4dabf7;")
+        queue_buttons_layout.addWidget(self.queue_add_btn)
+
         # Ordre des boutons selon la demande: descendre, monter, supprimer, tout en bas, tout en haut, supprimer tout
         self.queue_down_btn = QPushButton("Descendre")
         self.queue_down_btn.setToolTip("Déplacer l'élément sélectionné vers le bas")
@@ -420,13 +432,6 @@ class MainWindow(QMainWindow):
         self.queue_up_btn.setToolTip("Déplacer l'élément sélectionné vers le haut")
         self.queue_up_btn.clicked.connect(self.move_queue_item_up)
         queue_buttons_layout.addWidget(self.queue_up_btn)
-
-        self.queue_delete_btn = QPushButton("Supprimer")
-        self.queue_delete_btn.setToolTip(
-            "Supprimer l'élément sélectionné de la file d'attente"
-        )
-        self.queue_delete_btn.clicked.connect(self.delete_queue_item)
-        queue_buttons_layout.addWidget(self.queue_delete_btn)
 
         self.queue_bottom_btn = QPushButton("Tout en bas")
         self.queue_bottom_btn.setToolTip(
@@ -442,7 +447,15 @@ class MainWindow(QMainWindow):
         self.queue_top_btn.clicked.connect(self.move_queue_item_to_top)
         queue_buttons_layout.addWidget(self.queue_top_btn)
 
-        self.queue_clear_btn = QPushButton("Supprimer tout")
+        self.queue_delete_btn = QPushButton("Supprimer")
+        self.queue_delete_btn.setToolTip(
+            "Supprimer l'élément sélectionné de la file d'attente"
+        )
+        self.queue_delete_btn.clicked.connect(self.delete_queue_item)
+        self.queue_delete_btn.setStyleSheet("background-color: #ff6b6b;")
+        queue_buttons_layout.addWidget(self.queue_delete_btn)
+
+        self.queue_clear_btn = QPushButton("TOUT Supprimer")
         self.queue_clear_btn.setToolTip("Vider la file d'attente")
         self.queue_clear_btn.setStyleSheet("background-color: #ff6b6b;")
         self.queue_clear_btn.clicked.connect(self.clear_queue)
@@ -467,21 +480,21 @@ class MainWindow(QMainWindow):
         self.refresh_manual_btn = QPushButton("Rafraîchir")
         self.refresh_manual_btn.clicked.connect(self.load_manual_encodings)
 
-        self.delete_selected_btn = QPushButton("Supprimer sélection")
-        self.delete_selected_btn.clicked.connect(self.delete_selected_encodings)
-
-        self.delete_all_btn = QPushButton("Tout supprimer")
-        self.delete_all_btn.clicked.connect(self.delete_all_encodings)
-        self.delete_all_btn.setStyleSheet("background-color: #ff6b6b;")
-
-        # Ajouter le nouveau bouton pour localiser le fichier
         self.locate_file_btn = QPushButton("Localiser fichier")
         self.locate_file_btn.clicked.connect(self.locate_selected_file)
         self.locate_file_btn.setStyleSheet("background-color: #4dabf7;")
 
+        self.delete_selected_btn = QPushButton("Supprimer")
+        self.delete_selected_btn.clicked.connect(self.delete_selected_encodings)
+        self.delete_selected_btn.setStyleSheet("background-color: #ff6b6b;")
+
+        self.delete_all_btn = QPushButton("TOUT supprimer")
+        self.delete_all_btn.clicked.connect(self.delete_all_encodings)
+        self.delete_all_btn.setStyleSheet("background-color: #ff6b6b;")
+
         manual_buttons_layout.addWidget(self.refresh_manual_btn)
-        manual_buttons_layout.addWidget(self.delete_selected_btn)
         manual_buttons_layout.addWidget(self.locate_file_btn)
+        manual_buttons_layout.addWidget(self.delete_selected_btn)
         manual_buttons_layout.addWidget(self.delete_all_btn)
 
         main_layout.addLayout(manual_buttons_layout)
@@ -1289,3 +1302,93 @@ class MainWindow(QMainWindow):
         self.all_logs_loaded = False
         self.load_old_logs_button.setVisible(True)
         self.load_old_logs_button.setText("Charger les\nanciens logs")
+
+    def add_to_queue(self):
+        """Ajoute un fichier ou dossier à la file d'attente"""
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+        dialog = QFileDialog()
+        dialog.setFileMode(QFileDialog.ExistingFiles)  # Permet la multi-sélection
+        dialog.setOptions(options)
+        dialog.setWindowTitle("Sélectionner fichiers ou dossiers à ajouter")
+        dialog.setNameFilter(f"Fichiers vidéo (*{' *'.join(extensions)})")
+
+        if dialog.exec_():
+            selected_files = dialog.selectedFiles()
+
+            # Créer une boîte de dialogue pour choisir le preset
+            preset_dialog = QMessageBox()
+            preset_dialog.setWindowTitle("Sélectionner un preset")
+            preset_dialog.setText("Veuillez choisir un preset pour ces fichiers:")
+            preset_dialog.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+
+            # Ajouter une liste déroulante des presets disponibles
+            preset_combo = QComboBox(preset_dialog)
+            for preset in dossiers_presets.values():
+                preset_combo.addItem(preset)
+
+            # Positionner la liste déroulante
+            layout = preset_dialog.layout()
+            if layout is not None:
+                layout.addWidget(preset_combo, 1, 0, 1, layout.columnCount())
+            else:
+                preset_dialog.setDetailedText("Presets indisponibles")
+
+            # Si on clique sur "Ok", on continue avec le preset sélectionné
+            if preset_dialog.exec_() == QMessageBox.Ok:
+                selected_preset = preset_combo.currentText()
+
+                # Collecter tous les fichiers à ajouter
+                files_to_add = []
+
+                # Parcourir les éléments sélectionnés
+                for path in selected_files:
+                    if os.path.isdir(path):
+                        # Si c'est un dossier, scanner récursivement
+                        folder_files = self.scan_folder_recursively(path)
+                        for file_path in folder_files:
+                            files_to_add.append(
+                                {"file": file_path, "preset": selected_preset}
+                            )
+                    else:
+                        # Si c'est un fichier, vérifier l'extension
+                        if any(path.lower().endswith(ext) for ext in extensions):
+                            files_to_add.append(
+                                {"file": path, "preset": selected_preset}
+                            )
+
+                # Récupérer la file d'attente actuelle
+                current_queue = self.get_current_queue_files()
+
+                # Ajouter les nouveaux fichiers
+                for file_info in files_to_add:
+                    current_queue.append(file_info)
+
+                # Mettre à jour l'interface
+                self.update_queue(current_queue)
+
+                # Signaler le changement à l'encodeur
+                if hasattr(self, "control_flags"):
+                    self.control_flags["queue_modified"] = True
+                    # Forcer la mise à jour immédiate
+                    from state_persistence import save_interrupted_encodings
+
+                    save_interrupted_encodings(None, current_queue)
+
+                self.add_log(
+                    f"Ajouté {len(files_to_add)} fichier(s) à la file d'attente",
+                    "INFO",
+                    "green",
+                )
+
+    def scan_folder_recursively(self, folder_path):
+        """Scanne un dossier récursivement pour trouver tous les fichiers vidéo"""
+        found_files = []
+
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                if any(file.lower().endswith(ext) for ext in extensions):
+                    full_path = os.path.join(root, file)
+                    found_files.append(full_path)
+
+        return found_files
