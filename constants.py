@@ -47,12 +47,9 @@ extensions = [".mkv", ".mp4", ".avi"]
 criteres_audios = [
     "vfq",
     "ad",
-    " ad",
-    "-ad",
     "audiodescription",
     "quebec",
-    "nad",
-    "descriptive audio",
+    "descriptive",
 ]
 
 # Critères pour les sous-titres
