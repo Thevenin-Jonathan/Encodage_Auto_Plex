@@ -1,144 +1,167 @@
+import json
 from utils import horodatage, enlever_accents
 from constants import criteres_audios
-import json
 from logger import setup_logger
 
 # Configuration du logger
 logger = setup_logger(__name__)
 
 
-def selectionner_pistes_audio(info_pistes, preset):
+def noter_piste_audio(piste, langues_prioritaires):
     """
-    Sélectionne les pistes audio à inclure en fonction des informations des pistes et du preset spécifié.
+    Attribue une note à une piste audio en fonction de critères spécifiques.
 
-    Arguments:
-    info_pistes -- Dictionnaire contenant les informations des pistes audio.
-    preset -- Chaîne de caractères représentant le preset utilisé pour l'encodage.
+    Args:
+        piste: Dictionnaire contenant les informations de la piste audio.
+        langues_prioritaires: Liste des codes de langue prioritaires.
 
-    Retourne:
-    Une liste des numéros de pistes des pistes audio sélectionnées, ou None si aucune piste valide n'est trouvée.
+    Returns:
+        Une note (int) pour la piste audio.
     """
-    pistes_audio_selectionnees = []
+    note = 0
 
-    # Log debug de l'analyse des pistes audio
+    # Priorité pour les langues spécifiques
+    if piste.get("LanguageCode", "").lower() in langues_prioritaires:
+        note += 100
+
+    # Bonus pour les pistes avec un language code
+    if piste.get("LanguageCode"):
+        note += 20
+
+    # Priorité pour les pistes avec un nom vide ou contenant des mots-clés français
+    nom_piste = enlever_accents(piste.get("Name", "none").lower())
+    if piste.get("Name", "none").strip() == "" or any(
+        mot in nom_piste
+        for mot in [
+            "vff",
+            "fr",
+        ]
+    ):
+        note += 60
+
+    # Pénalité pour les pistes canadiennes
+    if any(mot in nom_piste for mot in ["vfq", "cana", "queb"]):
+        note -= 20
+
+    # Éviter les pistes malentendantes, descriptives, etc.
+    if any(
+        critere in enlever_accents(piste.get("Name", "").lower())
+        for critere in ["malentendant", "sdh", "descriptive", "audio description", "ad"]
+    ):
+        note -= 100
+
+    # Priorité pour les pistes par défaut
+    if piste.get("Default", False):
+        note += 10
+
+    return note
+
+
+def filtrer_pistes_audio(info_pistes, preset, verbose=False):
+    """
+    Filtre et sélectionne les meilleures pistes audio en fonction du preset.
+
+    Args:
+        info_pistes: Dictionnaire contenant les informations des pistes audio.
+        preset: Chaîne de caractères représentant le preset utilisé pour l'encodage.
+        verbose: Afficher les messages de débogage.
+
+    Returns:
+        Une liste des numéros de pistes audio sélectionnées ou None si aucune piste valide n'est trouvée.
+    """
     if "TitleList" not in info_pistes or not info_pistes["TitleList"]:
-        logger.debug("Aucune liste de titres trouvée dans les informations des pistes")
+        logger.warning(
+            "Aucune liste de titres trouvée dans les informations des pistes"
+        )
         return None
 
     if "AudioList" not in info_pistes["TitleList"][0]:
-        logger.debug("Aucune liste de pistes audio trouvée")
+        logger.warning("Aucune liste de pistes audio trouvée")
         return None
 
-    # Affichage détaillé de chaque piste audio
     audio_tracks = info_pistes["TitleList"][0]["AudioList"]
-    logger.debug(f"Nombre total de pistes audio détectées: {len(audio_tracks)}")
+    logger.debug(f"Nombre total de pistes audio détectées : {len(audio_tracks)}")
 
-    for i, track in enumerate(audio_tracks):
-        # Création d'un dictionnaire propre pour le log
-        track_info = {
-            "Position": i + 1,
-            "TrackNumber": track.get("TrackNumber", "N/A"),
-            "LanguageCode": track.get("LanguageCode", "N/A"),
-            "Language": track.get("Language", "N/A"),
-            "Name": track.get("Name", "N/A"),
-            "Format": track.get("Format", "N/A"),
-            "SampleRate": track.get("SampleRate", "N/A"),
-            "BitRate": track.get("BitRate", "N/A"),
-            "Channels": track.get("Channels", "N/A"),
-            "Default": track.get("Default", "N/A"),
-        }
+    # Si une seule piste audio est présente et que le preset n'est pas MULTI
+    if len(audio_tracks) == 1 and not "MULTI" in preset:
+        piste_unique = audio_tracks[0]
+        if piste_unique.get("LanguageCode", "").lower() != "fra":
+            logger.warning(
+                f"{horodatage()} 🚫 La seule piste audio n'est pas en français : "
+                f"{piste_unique.get('LanguageCode', 'inconnu')}"
+            )
+        return [piste_unique.get("TrackNumber")]
 
-        # Convertir en JSON pour une meilleure lisibilité
-        track_json = json.dumps(track_info, indent=2, ensure_ascii=False)
-        logger.debug(f"Piste audio #{i+1}:\n{track_json}")
+    langues_prioritaires = ["fra", "fre", "fr", "french"]
+    pistes_notees = []
 
-    if preset in [
-        "Dessins animes VF",
-        "Films - Series VF",
-        "4K - 10bits",
-    ]:
+    # Noter chaque piste audio
+    for piste in audio_tracks:
+        note = noter_piste_audio(piste, langues_prioritaires)
+        pistes_notees.append(
+            {"TrackNumber": piste.get("TrackNumber"), "Note": note, **piste}
+        )
 
-        # Sélectionner les pistes audio en français
-        pistes_francaises = [
-            piste
-            for piste in info_pistes["TitleList"][0]["AudioList"]
-            if piste.get("LanguageCode", "") == "fra"
-        ]
-        if not pistes_francaises:
-            print(f"{horodatage()} 🚫 Aucune piste audio française disponible.")
+    # Trier les pistes par note décroissante
+    pistes_notees = sorted(pistes_notees, key=lambda x: x["Note"], reverse=True)
+    logger.debug(
+        f"Pistes notées : {json.dumps(pistes_notees, indent=2, ensure_ascii=False)}"
+    )
+
+    pistes_selectionnees = []
+
+    # Logique de sélection en fonction du preset
+    if preset in ["Dessins animes VF", "Films - Series VF", "4K - 10bits"]:
+        # Garder uniquement la meilleure piste française non malentendante
+        for piste in pistes_notees:
+            if (
+                piste.get("LanguageCode", "").lower() in langues_prioritaires
+                and piste["Note"] > 0
+            ):
+                pistes_selectionnees = [piste["TrackNumber"]]
+                break
+
+    elif preset in ["Films - Series MULTI", "Mangas MULTI"]:
+        # Garder une seule piste par langue, en évitant les pistes malentendantes
+        langues_vues = set()
+        for piste in pistes_notees:
+            if (
+                piste.get("LanguageCode", "").lower() not in langues_vues
+                and piste["Note"] > 0
+            ):
+                pistes_selectionnees.append(piste["TrackNumber"])
+                langues_vues.add(piste.get("LanguageCode", "").lower())
+
+        # Vérifier si le nombre de pistes sélectionnées est inférieur à deux
+        if len(pistes_selectionnees) < 2:
+            logger.warning(
+                f"{horodatage()} 🚫 Moins de deux pistes valides trouvées pour le preset MULTI."
+            )
             return None
 
-        # Filtrer les pistes selon les critères
-        pistes_audio_finales = [
-            piste
-            for piste in pistes_francaises
-            if not any(
-                critere in enlever_accents(piste.get("Name", ""))
-                for critere in criteres_audios
-            )
+    elif preset == "Mangas VO":
+        # Collecter toutes les pistes valides
+        pistes_valides = [
+            piste["TrackNumber"] for piste in pistes_notees if piste["Note"] > 0
         ]
 
-        if len(pistes_audio_finales) < 1:
-            print(f"{horodatage()} 🚫 Aucune piste audio disponible pour ce média.")
-            return None
-
-        if len(pistes_audio_finales) > 1:
-            print(
-                f"{horodatage()} 🚫 Il y a plus de 2 pistes valides pour ce média. (Pistes : {pistes_audio_finales})"
+        # Vérifier si plus d'une piste valide est sélectionnée
+        if len(pistes_valides) > 1:
+            logger.warning(
+                f"{horodatage()} 🚫 Trop de pistes valides trouvées pour le preset VO."
             )
             return None
 
-        pistes_audio_selectionnees = [pistes_audio_finales[0]["TrackNumber"]]
+        # Garder uniquement la meilleure piste si une seule est valide
+        if pistes_valides:
+            pistes_selectionnees = [pistes_valides[0]]
 
-    elif preset in ["Films - Series MULTI", "Mangas MULTI", "Mangas VO"]:
-        # Sélectionner les numéros de piste audio depuis la première entrée de la liste des titres
-        pistes_audio_selectionnees = [
-            piste["TrackNumber"] for piste in info_pistes["TitleList"][0]["AudioList"]
-        ]
-
-        if preset in ["Films - Series MULTI", "Mangas MULTI 1000kbps"]:
-            # Vérifier si la liste contient au moins deux entrées
-            if len(pistes_audio_selectionnees) < 2:
-                print(
-                    f"{horodatage()} 🚫 Minimum 2 pistes audios requises pour un média en MULTI."
-                )
-                return None
-
-        if preset == "Mangas VO":
-            if len(pistes_audio_selectionnees) > 2:
-                print(
-                    f"{horodatage()} 🚫 Il y a plus de 2 pistes valides pour ce média en VO."
-                )
-                return None
-
-        # Vérifier s'il existe au moins une piste audio en français
-        if any(
-            piste.get("LanguageCode", "") == "fra"
-            for piste in info_pistes["TitleList"][0]["AudioList"]
-        ):
-            # Trouver le numéro de la première piste audio en français
-            piste_francaise_index = next(
-                piste["TrackNumber"]
-                for piste in info_pistes["TitleList"][0]["AudioList"]
-                if piste.get("LanguageCode", "") == "fra"
-            )
-
-            # Déplacer la piste audio française en première position dans la liste
-            pistes_audio_selectionnees.insert(
-                0,
-                pistes_audio_selectionnees.pop(
-                    pistes_audio_selectionnees.index(piste_francaise_index)
-                ),
-            )
-        else:
-            if preset in ["Films - Series MULTI", "Mangas MULTI"]:
-                print(
-                    f"{horodatage()} 🚫 Aucune piste audio française disponible pour ce média."
-                )
-                return None
-
-    if pistes_audio_selectionnees == []:
-        # Aucun sous-titre français trouvé, retourner une erreur
-        print(f"{horodatage()} 🚫 Aucune piste audio disponible pour ce média.")
+    # Si aucune piste valide n'est trouvée, retourner None
+    if not pistes_selectionnees:
+        logger.warning(f"{horodatage()} 🚫 Aucune piste audio valide sélectionnée.")
         return None
-    return pistes_audio_selectionnees
+
+    logger.info(
+        f"Pistes sélectionnées pour le preset '{preset}' : {pistes_selectionnees}"
+    )
+    return pistes_selectionnees
