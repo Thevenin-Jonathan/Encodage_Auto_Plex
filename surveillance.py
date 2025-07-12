@@ -40,10 +40,27 @@ def surveille_dossiers(
         f"✅ Démarrage de la surveillance sur {len(dossiers_presets)} dossier(s)"
     )
 
+    def safe_load_files(file_path):
+        """Lecture sécurisée d'un fichier JSON."""
+        try:
+            return charger_fichiers(file_path)
+        except Exception as e:
+            logger.warning(f"Impossible de charger le fichier {file_path}: {str(e)}")
+            return {}
+
+    def safe_save_files(file_path, data):
+        """Écriture sécurisée dans un fichier JSON."""
+        try:
+            sauvegarder_fichiers(file_path, data)
+        except Exception as e:
+            logger.warning(
+                f"Impossible de sauvegarder le fichier {file_path}: {str(e)}"
+            )
+
     try:
         # Charger les fichiers détectés et encodés à partir des fichiers de sauvegarde
-        fichiers_detectes = charger_fichiers(fichier_sauvegarde)
-        fichiers_encodes = charger_fichiers(fichier_encodes)
+        fichiers_detectes = safe_load_files(fichier_sauvegarde)
+        fichiers_encodes = safe_load_files(fichier_encodes)
 
         # Obtenir la liste initiale des fichiers dans chaque dossier
         fichiers_initiaux = {
@@ -72,12 +89,6 @@ def surveille_dossiers(
                         if dossier not in fichiers_detectes:
                             fichiers_detectes[dossier] = []
                         fichiers_detectes[dossier].append(fichier)
-
-                        # # Ajouter un délai après la détection d'un fichier
-                        # logger.info(
-                        #     f"Attente de 5 secondes pour s'assurer que le fichier est bien disponible..."
-                        # )
-                        # time.sleep(5)
 
                         # Vérifier si le fichier est toujours accessible
                         if os.path.exists(fichier) and os.access(fichier, os.R_OK):
@@ -135,8 +146,8 @@ def surveille_dossiers(
                 fichiers_initiaux[dossier] = fichiers_actuels
 
             # Sauvegarder l'état actuel des fichiers détectés et encodés
-            sauvegarder_fichiers(fichier_sauvegarde, fichiers_detectes)
-            sauvegarder_fichiers(fichier_encodes, fichiers_encodes)
+            safe_save_files(fichier_sauvegarde, fichiers_detectes)
+            safe_save_files(fichier_encodes, fichiers_encodes)
 
             # Attendre avant le prochain cycle de surveillance
             time.sleep(10)
