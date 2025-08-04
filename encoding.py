@@ -3,7 +3,7 @@ import os
 import subprocess
 import re
 import time
-from audio_selection import selectionner_pistes_audio
+from audio_selection import filtrer_pistes_audio
 from subtitle_analyzer import analyser_sous_titres_francais
 from successful_encodings import record_successful_encoding
 from state_persistence import (
@@ -15,7 +15,11 @@ from constants import (
     debug_mode,
     fichier_presets,
 )
-from utils import horodatage, tronquer_nom_fichier
+from utils import (
+    horodatage,
+    tronquer_nom_fichier,
+    obtenir_dossier_sortie_dossier_source,
+)
 from file_operations import (
     obtenir_pistes,
     ajouter_fichier_a_liste_encodage_manuel,
@@ -56,19 +60,39 @@ def normaliser_chemin(chemin):
 
 
 def lancer_encodage_avec_gui(
-    fichier, preset, signals=None, control_flags=None, file_encodage=None
+    fichier,
+    preset,
+    signals=None,
+    control_flags=None,
+    file_encodage=None,
+    dossier_source=None,
 ):
     logger = setup_logger(__name__)
 
     # Normaliser les chemins (remplacer les antislash par des slash)
     fichier = normaliser_chemin(fichier)
 
+    # Obtenir le dossier de sortie basé sur le dossier source
+    if dossier_source:
+        dossier_sortie_final = obtenir_dossier_sortie_dossier_source(dossier_source)
+    else:
+        # Fallback vers le dossier par défaut
+        from constants import dossier_sortie
+
+        dossier_sortie_final = dossier_sortie
+
+    # S'assurer que le dossier de sortie existe
+    if not os.path.exists(dossier_sortie_final):
+        os.makedirs(dossier_sortie_final)
+
     # Récupérer uniquement le nom du fichier
     nom_fichier = os.path.basename(fichier)
     short_fichier = tronquer_nom_fichier(nom_fichier)
     base_nom, _ = os.path.splitext(nom_fichier)
     fichier_sortie = f"{base_nom}_encoded.mkv"  # Toujours utiliser .mkv comme extension
-    chemin_sortie = normaliser_chemin(os.path.join(dossier_sortie, fichier_sortie))
+    chemin_sortie = normaliser_chemin(
+        os.path.join(dossier_sortie_final, fichier_sortie)
+    )
 
     # Mettre à jour le chemin de sortie dans l'interface si disponible
     if signals and hasattr(signals, "update_output_path"):
@@ -105,7 +129,7 @@ def lancer_encodage_avec_gui(
             return False
 
         # Sélection des pistes audio selon le preset
-        audio_tracks = selectionner_pistes_audio(info_pistes, preset)
+        audio_tracks = filtrer_pistes_audio(info_pistes, preset)
         if audio_tracks is None:
             reason = "audio"
             logger.warning(
@@ -492,7 +516,7 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
         # Encodage avec gestion GUI
         logger.info(f"Début de l'encodage de {fichier} avec le preset {preset}")
         result = lancer_encodage_avec_gui(
-            fichier, preset, signals, control_flags, file_encodage
+            fichier, preset, signals, control_flags, file_encodage, dossier
         )
 
         # Si l'encodage est terminé avec succès, on peut effacer l'état sauvegardé

@@ -66,18 +66,85 @@ La configuration des dossiers surveillés et de leurs préréglages associés s'
 
 ```python
 dossiers_presets = {
-    "D:/Torrents/Dessins_animes": "Dessins animes FR 1000kbps",
+    "D:/Torrents/Dessins animes VF": "Dessins animes VF",
     "D:/Torrents/Films": "1080p HD-Light 1500kbps",
     "D:/Torrents/Manga": "Mangas MULTI 1000kbps",
     "D:/Torrents/Manga_VO": "Mangas VO 1000kbps",
     "D:/Torrents/Series": "1080p HD-Light 1500kbps",
 }
+```
 
-# Dossier de sortie pour les fichiers encodés
+### Configuration des dossiers de sortie par dossier source
+
+**🆕 NOUVELLE FONCTIONNALITÉ** : Chaque dossier surveillé peut maintenant avoir son propre dossier de sortie correspondant !
+
+#### Principe de fonctionnement
+
+Le système fonctionne maintenant avec une correspondance directe entre les dossiers surveillés et les dossiers de sortie :
+
+- `D:/Torrents/Film VF` → `D:/Ripped/Film VF`
+- `D:/Torrents/Dessins animes VF` → `D:/Ripped/Dessins animes VF`
+- `D:/Torrents/Mangas VO` → `D:/Ripped/Mangas VO`
+- etc.
+
+#### Via l'interface graphique (Recommandé)
+
+1. Lancez l'application
+2. Cliquez sur le bouton **"Configurer dossiers sortie"** dans l'interface principale
+3. Dans la fenêtre qui s'ouvre :
+   - Chaque dossier source surveillé est listé avec son dossier de sortie actuel
+   - Cliquez sur **"Parcourir"** pour changer le dossier de sortie d'un dossier source
+   - Utilisez **"Réinitialiser"** pour revenir aux valeurs par défaut
+   - Cliquez sur **"Sauvegarder"** pour appliquer les changements
+
+#### Configuration manuelle
+
+La configuration est stockée dans le fichier `datas/config.json` :
+
+```json
+{
+  "notifications_enabled": true,
+  "dossiers_sortie_surveillance": {
+    "D:/Torrents/Dessins animes VF": "D:/Ripped/Dessins animes VF",
+    "D:/Torrents/Film VF": "D:/Ripped/Film VF",
+    "D:/Torrents/Film Jeunes VF": "D:/Ripped/Film Jeunes VF",
+    "D:/Torrents/Series VF": "D:/Ripped/Series VF",
+    "D:/Torrents/Film MULTI": "D:/Ripped/Film MULTI",
+    "D:/Torrents/Film Jeunes MULTI": "D:/Ripped/Film Jeunes MULTI",
+    "D:/Torrents/Series MULTI": "D:/Ripped/Series MULTI",
+    "D:/Torrents/Mangas MULTI": "D:/Ripped/Mangas MULTI",
+    "D:/Torrents/Mangas VO": "D:/Ripped/Mangas VO",
+    "D:/Torrents/Film 4K": "D:/Ripped/Film 4K",
+    "D:/Torrents/Serie 4K": "D:/Ripped/Serie 4K"
+  }
+}
+```
+
+#### Configuration par défaut
+
+Si aucune configuration spécifique n'est définie, les valeurs par défaut dans `constants.py` sont utilisées :
+
+```python
+# Configuration des dossiers de sortie pour chaque dossier surveillé
+dossiers_sortie_surveillance = {
+    "D:/Torrents/Dessins animes VF": "D:/Ripped/Dessins animes VF",
+    "D:/Torrents/Film VF": "D:/Ripped/Film VF",
+    "D:/Torrents/Film Jeunes VF": "D:/Ripped/Film Jeunes VF",
+    "D:/Torrents/Series VF": "D:/Ripped/Series VF",
+    "D:/Torrents/Film MULTI": "D:/Ripped/Film MULTI",
+    "D:/Torrents/Film Jeunes MULTI": "D:/Ripped/Film Jeunes MULTI",
+    "D:/Torrents/Series MULTI": "D:/Ripped/Series MULTI",
+    "D:/Torrents/Mangas MULTI": "D:/Ripped/Mangas MULTI",
+    "D:/Torrents/Mangas VO": "D:/Ripped/Mangas VO",
+    "D:/Torrents/Film 4K": "D:/Ripped/Film 4K",
+    "D:/Torrents/Serie 4K": "D:/Ripped/Serie 4K",
+}
+
+# Dossier de sortie par défaut (pour compatibilité)
 dossier_sortie = "D:/Ripped"
 ```
 
-### Préréglages d'encodage
+⚠️ **Important** : Les dossiers de sortie sont créés automatiquement au démarrage de l'application.### Préréglages d'encodage
 
 Les préréglages d'encodage sont définis dans le fichier custom_presets.json. Ils peuvent être modifiés directement dans ce fichier ou créés via l'interface HandBrake GUI puis exportés et intégrés à l'application.
 

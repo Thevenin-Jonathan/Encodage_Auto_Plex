@@ -7,6 +7,7 @@ from constants import (
     debug_mode,
     dossier_encodage_manuel,
     dossier_sortie,
+    dossiers_sortie_surveillance,
     fichier_encodage_manuel,
 )
 from logger import colored_log, setup_logger
@@ -60,9 +61,24 @@ def obtenir_pistes(filepath):
 def verifier_dossiers():
     """
     Vérifie si les dossiers de sortie et d'encodage manuel existent, et les crée sinon.
+    Crée également tous les dossiers de sortie spécifiques aux dossiers surveillés.
     """
+    # Créer le dossier de sortie par défaut
     if not os.path.exists(dossier_sortie):
         os.makedirs(dossier_sortie)
+
+    # Créer tous les dossiers de sortie spécifiques aux dossiers surveillés
+    for dossier_source, dossier_sortie_final in dossiers_sortie_surveillance.items():
+        if not os.path.exists(dossier_sortie_final):
+            os.makedirs(dossier_sortie_final)
+            colored_log(
+                logger,
+                f"Dossier de sortie créé pour '{dossier_source}': {dossier_sortie_final}",
+                "INFO",
+                "green",
+            )
+
+    # Créer le dossier d'encodage manuel
     if not os.path.exists(dossier_encodage_manuel):
         os.makedirs(dossier_encodage_manuel)
 

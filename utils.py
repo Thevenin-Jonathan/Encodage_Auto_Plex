@@ -36,3 +36,47 @@ def tronquer_nom_fichier(nom_fichier, debut=40, fin=20):
     if len(nom_fichier) <= debut + fin:
         return nom_fichier
     return f"{debut_part}...{fin_part}"
+
+
+def obtenir_dossier_sortie_dossier_source(dossier_source):
+    """
+    Retourne le dossier de sortie correspondant à un dossier source surveillé.
+
+    Arguments:
+    dossier_source -- Le chemin du dossier source surveillé
+
+    Retourne:
+    Le chemin du dossier de sortie pour ce dossier source, ou le dossier par défaut si non trouvé
+    """
+    try:
+        from config import get_output_directory_for_source_folder
+
+        return get_output_directory_for_source_folder(dossier_source)
+    except ImportError:
+        # Fallback vers les constantes si le module config n'est pas disponible
+        from constants import dossiers_sortie_surveillance, dossier_sortie
+
+        return dossiers_sortie_surveillance.get(dossier_source, dossier_sortie)
+
+
+def obtenir_dossier_sortie_preset(preset):
+    """
+    Retourne le dossier de sortie correspondant à un preset donné.
+
+    Arguments:
+    preset -- Le nom du preset
+
+    Retourne:
+    Le chemin du dossier de sortie pour ce preset, ou le dossier par défaut si non trouvé
+
+    DEPRECATED: Utilisez obtenir_dossier_sortie_dossier_source() à la place
+    """
+    try:
+        from config import get_output_directory_for_preset
+
+        return get_output_directory_for_preset(preset)
+    except ImportError:
+        # Fallback vers les constantes si le module config n'est pas disponible
+        from constants import dossier_sortie
+
+        return dossier_sortie

@@ -272,6 +272,186 @@ class LogsPanel(QWidget):
         self.setMinimumWidth(400)
 
 
+class OutputDirectoriesDialog(QWidget):
+    """Dialogue pour configurer les dossiers de sortie pour chaque preset"""
+
+    def __init__(self, parent=None):
+        super().__init__()
+        self.parent = parent
+        self.setWindowTitle("Configuration des dossiers de sortie")
+        self.setFixedSize(700, 500)
+        self.setWindowModality(Qt.ApplicationModal)
+
+        # Import ici pour éviter les imports circulaires
+        from config import (
+            get_output_directories_for_surveillance,
+            update_output_directory_for_source,
+        )
+        from constants import dossiers_presets
+
+        self.get_output_directories = get_output_directories_for_surveillance
+        self.update_output_directory = update_output_directory_for_source
+        self.dossiers_sources = list(dossiers_presets.keys())
+
+        self.setup_ui()
+        self.load_current_directories()
+
+    def setup_ui(self):
+        """Configure l'interface utilisateur du dialogue"""
+        layout = QVBoxLayout(self)
+
+        # Titre
+        title_label = QLabel("Configuration des dossiers de sortie par dossier source")
+        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
+
+        # Description
+        description = QLabel(
+            "Chaque dossier surveillé a son propre dossier de sortie correspondant.\n"
+            "Cliquez sur 'Parcourir' pour changer le dossier de sortie d'un dossier source."
+        )
+        description.setAlignment(Qt.AlignCenter)
+        description.setStyleSheet("QLabel { color: #666; margin: 10px; }")
+        layout.addWidget(description)
+
+        # Table des configurations
+        self.table = QTableWidget()
+        self.table.setColumnCount(3)
+        self.table.setHorizontalHeaderLabels(
+            ["Dossier source", "Dossier de sortie", "Action"]
+        )
+        self.table.horizontalHeader().setStretchLastSection(False)
+        self.table.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(
+            2, QHeaderView.ResizeToContents
+        )
+        layout.addWidget(self.table)
+
+        # Boutons
+        button_layout = QHBoxLayout()
+
+        self.reset_button = QPushButton("Réinitialiser")
+        self.reset_button.setToolTip(
+            "Réinitialiser tous les dossiers aux valeurs par défaut"
+        )
+        self.reset_button.clicked.connect(self.reset_to_defaults)
+        button_layout.addWidget(self.reset_button)
+
+        button_layout.addStretch()
+
+        self.cancel_button = QPushButton("Annuler")
+        self.cancel_button.clicked.connect(self.close)
+        button_layout.addWidget(self.cancel_button)
+
+        self.save_button = QPushButton("Sauvegarder")
+        self.save_button.setStyleSheet(
+            """
+            QPushButton {
+                background-color: #0078d4;
+                color: white;
+                font-weight: bold;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 4px;
+            }
+            QPushButton:hover {
+                background-color: #106ebe;
+            }
+        """
+        )
+        self.save_button.clicked.connect(self.save_directories)
+        button_layout.addWidget(self.save_button)
+
+        layout.addLayout(button_layout)
+
+    def load_current_directories(self):
+        """Charge les dossiers actuels dans la table"""
+        directories = self.get_output_directories()
+        self.table.setRowCount(len(self.dossiers_sources))
+
+        for i, dossier_source in enumerate(self.dossiers_sources):
+            # Colonne Dossier source
+            source_item = QTableWidgetItem(dossier_source)
+            source_item.setFlags(source_item.flags() & ~Qt.ItemIsEditable)
+            self.table.setItem(i, 0, source_item)
+
+            # Colonne Dossier de sortie
+            directory = directories.get(dossier_source, "D:/Ripped")
+            directory_item = QTableWidgetItem(directory)
+            directory_item.setFlags(directory_item.flags() & ~Qt.ItemIsEditable)
+            self.table.setItem(i, 1, directory_item)
+
+            # Colonne Action (bouton Parcourir)
+            browse_button = QPushButton("Parcourir")
+            browse_button.clicked.connect(
+                lambda checked, row=i: self.browse_directory(row)
+            )
+            self.table.setCellWidget(i, 2, browse_button)
+
+    def browse_directory(self, row):
+        """Ouvre une boîte de dialogue pour sélectionner un dossier"""
+        current_directory = self.table.item(row, 1).text()
+        new_directory = QFileDialog.getExistingDirectory(
+            self, "Sélectionner le dossier de sortie", current_directory
+        )
+
+        if new_directory:
+            # Normaliser le chemin (remplacer \ par /)
+            new_directory = new_directory.replace("\\", "/")
+            self.table.item(row, 1).setText(new_directory)
+
+    def reset_to_defaults(self):
+        """Réinitialise tous les dossiers aux valeurs par défaut"""
+        from constants import dossiers_sortie_surveillance
+
+        reply = QMessageBox.question(
+            self,
+            "Réinitialiser",
+            "Êtes-vous sûr de vouloir réinitialiser tous les dossiers aux valeurs par défaut ?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+
+        if reply == QMessageBox.Yes:
+            for i, dossier_source in enumerate(self.dossiers_sources):
+                default_directory = dossiers_sortie_surveillance.get(
+                    dossier_source, "D:/Ripped"
+                )
+                self.table.item(i, 1).setText(default_directory)
+
+    def save_directories(self):
+        """Sauvegarde les nouvelles configurations"""
+        try:
+            for i, dossier_source in enumerate(self.dossiers_sources):
+                directory = self.table.item(i, 1).text()
+                self.update_output_directory(dossier_source, directory)
+
+            QMessageBox.information(
+                self,
+                "Configuration sauvegardée",
+                "Les dossiers de sortie ont été mis à jour avec succès !",
+            )
+
+            # Informer la fenêtre parent que la configuration a changé
+            if self.parent:
+                self.parent.add_log(
+                    "Configuration des dossiers de sortie mise à jour", "INFO", "green"
+                )
+
+            self.close()
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Erreur",
+                f"Erreur lors de la sauvegarde de la configuration :\n{str(e)}",
+            )
+
+
 class MainWindow(QMainWindow):
     """Fenêtre principale de l'application"""
 
@@ -318,7 +498,7 @@ class MainWindow(QMainWindow):
         self.show_history_button.setStyleSheet(
             """
             QPushButton {
-                min-height: 50px;
+                min-height: 40px;
                 min-width: 140px;
                 font-weight: bold;
             }
@@ -338,6 +518,25 @@ class MainWindow(QMainWindow):
         notifications_layout.setAlignment(Qt.AlignTop)  # Aligner en haut
         notifications_layout.setContentsMargins(0, 0, 0, 0)  # Réduire les marges
         notifications_layout.setSpacing(5)
+
+        # Bouton pour configurer les dossiers de sortie
+        self.config_dirs_button = QPushButton("Configurer\ndossiers sortie")
+        self.config_dirs_button.setToolTip(
+            "Configurer les dossiers de sortie pour chaque preset"
+        )
+        self.config_dirs_button.setFont(QFont("Arial", 10, QFont.Bold))
+        self.config_dirs_button.clicked.connect(self.open_output_directories_config)
+        notifications_layout.addWidget(self.config_dirs_button)
+
+        # Forcer la taille via une feuille de style CSS
+        self.config_dirs_button.setStyleSheet(
+            """
+            QPushButton {
+                min-height: 40px;
+                min-width: 140px;
+            }
+        """
+        )
 
         # Checkbox pour activer/désactiver les notifications Windows
         self.notifications_checkbox = QCheckBox("Notifications Windows")
@@ -1136,6 +1335,18 @@ class MainWindow(QMainWindow):
         # Ajouter un message dans les logs
         status = "activées" if notifications_enabled else "désactivées"
         self.add_log(f"Notifications Windows {status}", "INFO", "green")
+
+    def open_output_directories_config(self):
+        """Ouvre la fenêtre de configuration des dossiers de sortie"""
+        try:
+            self.output_dirs_dialog = OutputDirectoriesDialog(parent=self)
+            self.output_dirs_dialog.show()
+        except Exception as e:
+            self.add_log(
+                f"Erreur lors de l'ouverture de la configuration des dossiers: {str(e)}",
+                "ERROR",
+                "red",
+            )
 
     def locate_selected_file(self):
         """Ouvre l'explorateur à l'emplacement du fichier sélectionné"""

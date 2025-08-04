@@ -18,14 +18,36 @@ icon_file = os.path.join(BASE_PATH, "images", "ico.ico")
 # Dossiers à surveiller et leurs presets HandBrake
 dossiers_presets = {
     "D:/Torrents/Dessins animes VF": "Dessins animes VF",
-    "D:/Torrents/Film - series VF": "Films - Series VF",
-    "D:/Torrents/Film - series MULTI": "Films - Series MULTI",
+    "D:/Torrents/Film VF": "Films - Series VF",
+    "D:/Torrents/Film Jeunes VF": "Films - Series VF",
+    "D:/Torrents/Series VF": "Films - Series VF",
+    "D:/Torrents/Film MULTI": "Films - Series MULTI",
+    "D:/Torrents/Film Jeunes MULTI": "Films - Series MULTI",
+    "D:/Torrents/Series MULTI": "Films - Series MULTI",
     "D:/Torrents/Mangas MULTI": "Mangas MULTI",
     "D:/Torrents/Mangas VO": "Mangas VO",
-    "D:/Torrents/4K - 10bits": "4K - 10bits",
+    "D:/Torrents/Film 4K": "4K - 10bits",
+    "D:/Torrents/Serie 4K": "4K - 10bits",
 }
 
-# Chemin du dossier de sortie pour les fichiers encodés
+# Configuration des dossiers de sortie pour chaque dossier surveillé
+# Chaque dossier surveillé a son propre dossier de sortie correspondant
+dossiers_sortie_surveillance = {
+    "D:/Torrents/Dessins animes VF": "D:/Ripped/seriesJeunes",
+    "D:/Torrents/Film VF": "D:/Ripped/films",
+    "D:/Torrents/Film Jeunes VF": "D:/Ripped/filmsJeunes",
+    "D:/Torrents/Series VF": "D:/Ripped/series",
+    "D:/Torrents/Film MULTI": "D:/Ripped/films",
+    "D:/Torrents/Film Jeunes MULTI": "D:/Ripped/filmsJeunes",
+    "D:/Torrents/Series MULTI": "D:/Ripped/series",
+    "D:/Torrents/Mangas MULTI": "D:/Ripped/seriesJeunes",
+    "D:/Torrents/Mangas VO": "D:/Ripped/seriesJeunes",
+    "D:/Torrents/Film 4K": "D:/Ripped/films4K",
+    "D:/Torrents/Serie 4K": "D:/Ripped/series4K",
+}
+
+# Chemin du dossier de sortie par défaut (pour compatibilité)
+# Utilisé si aucun dossier spécifique n'est défini pour un dossier surveillé
 dossier_sortie = "D:/Ripped"
 
 # Fichier de presets personnalisés
