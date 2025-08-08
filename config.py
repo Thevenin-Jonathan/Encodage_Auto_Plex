@@ -20,6 +20,8 @@ DEFAULT_CONFIG = {
         "D:/Torrents/Mangas VO": "D:/Ripped/seriesJeunes",
         "D:/Torrents/Film 4K": "D:/Ripped/films4K",
         "D:/Torrents/Serie 4K": "D:/Ripped/series4K",
+        "D:/Torrents/Series Jeunes VF": "D:/Ripped/seriesJeunes",
+        "D:/Torrents/Series Jeunes MULTI": "D:/Ripped/seriesJeunes",
     },
 }
 

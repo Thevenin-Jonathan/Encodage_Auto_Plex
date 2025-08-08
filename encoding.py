@@ -66,17 +66,22 @@ def lancer_encodage_avec_gui(
     control_flags=None,
     file_encodage=None,
     dossier_source=None,
+    dossier_sortie_personnalise=None,
 ):
     logger = setup_logger(__name__)
 
     # Normaliser les chemins (remplacer les antislash par des slash)
     fichier = normaliser_chemin(fichier)
 
-    # Obtenir le dossier de sortie basé sur le dossier source
-    if dossier_source:
+    # Obtenir le dossier de sortie selon la priorité
+    if dossier_sortie_personnalise:
+        # Priorité 1 : Dossier personnalisé (ajout manuel via interface)
+        dossier_sortie_final = dossier_sortie_personnalise
+    elif dossier_source:
+        # Priorité 2 : Dossier basé sur la surveillance automatique
         dossier_sortie_final = obtenir_dossier_sortie_dossier_source(dossier_source)
     else:
-        # Fallback vers le dossier par défaut
+        # Priorité 3 : Fallback vers le dossier par défaut
         from constants import dossier_sortie
 
         dossier_sortie_final = dossier_sortie
@@ -457,11 +462,13 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
             fichier = tache.get("file")
             preset = tache.get("preset")
             dossier = tache.get("folder", "")
+            dossier_sortie_personnalise = tache.get("output_dir", None)
         else:
             # Fallback au cas où c'est un tuple
             fichier = tache[0] if len(tache) > 0 else ""
             preset = tache[1] if len(tache) > 1 else ""
             dossier = ""
+            dossier_sortie_personnalise = None
 
         # Créer un dictionnaire pour l'encodage en cours
         current_encoding = {"file": fichier, "preset": preset, "folder": dossier}
@@ -516,7 +523,13 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
         # Encodage avec gestion GUI
         logger.info(f"Début de l'encodage de {fichier} avec le preset {preset}")
         result = lancer_encodage_avec_gui(
-            fichier, preset, signals, control_flags, file_encodage, dossier
+            fichier,
+            preset,
+            signals,
+            control_flags,
+            file_encodage,
+            dossier,
+            dossier_sortie_personnalise,
         )
 
         # Si l'encodage est terminé avec succès, on peut effacer l'état sauvegardé

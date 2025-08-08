@@ -952,8 +952,18 @@ class MainWindow(QMainWindow):
                 # Si l'élément est un dictionnaire
                 filename = os.path.basename(item.get("file", "Inconnu"))
                 preset = item.get("preset", "Preset inconnu")
+                output_dir = item.get("output_dir", "")
+
+                # Afficher le dossier de sortie s'il est spécifié
+                if output_dir:
+                    display_text = (
+                        f"{i}. {filename} - {preset} → {os.path.basename(output_dir)}"
+                    )
+                else:
+                    display_text = f"{i}. {filename} - {preset}"
+
                 # Stocker l'élément original comme userData pour pouvoir le récupérer plus tard
-                list_item = QListWidgetItem(f"{i}. {filename} - {preset}")
+                list_item = QListWidgetItem(display_text)
                 list_item.setData(Qt.UserRole, item)
             elif isinstance(item, tuple) and len(item) >= 2:
                 # Si l'élément est un tuple
@@ -1566,7 +1576,9 @@ class MainWindow(QMainWindow):
 
             # Ajouter une liste déroulante des presets disponibles
             preset_combo = QComboBox(preset_dialog)
-            for preset in dossiers_presets.values():
+            # Utiliser un set pour éliminer les doublons, puis trier la liste
+            unique_presets = sorted(set(dossiers_presets.values()))
+            for preset in unique_presets:
                 preset_combo.addItem(preset)
 
             # Positionner la liste déroulante
@@ -1580,6 +1592,23 @@ class MainWindow(QMainWindow):
             if preset_dialog.exec_() == QMessageBox.Ok:
                 selected_preset = preset_combo.currentText()
 
+                # Demander à l'utilisateur de choisir le dossier de sortie
+                output_dialog = QFileDialog()
+                output_dialog.setFileMode(QFileDialog.Directory)
+                output_dialog.setOptions(QFileDialog.ShowDirsOnly)
+                output_dialog.setWindowTitle("Sélectionner le dossier de sortie")
+
+                # Proposer le dossier par défaut comme point de départ
+                from constants import dossier_sortie
+
+                output_dialog.setDirectory(dossier_sortie)
+
+                if output_dialog.exec_():
+                    selected_output_dir = output_dialog.selectedFiles()[0]
+                else:
+                    # Si l'utilisateur annule, ne pas ajouter les fichiers
+                    return
+
                 # Collecter tous les fichiers à ajouter
                 files_to_add = []
 
@@ -1590,13 +1619,21 @@ class MainWindow(QMainWindow):
                         folder_files = self.scan_folder_recursively(path)
                         for file_path in folder_files:
                             files_to_add.append(
-                                {"file": file_path, "preset": selected_preset}
+                                {
+                                    "file": file_path,
+                                    "preset": selected_preset,
+                                    "output_dir": selected_output_dir,
+                                }
                             )
                     else:
                         # Si c'est un fichier, vérifier l'extension
                         if any(path.lower().endswith(ext) for ext in extensions):
                             files_to_add.append(
-                                {"file": path, "preset": selected_preset}
+                                {
+                                    "file": path,
+                                    "preset": selected_preset,
+                                    "output_dir": selected_output_dir,
+                                }
                             )
 
                 # Récupérer la file d'attente actuelle
