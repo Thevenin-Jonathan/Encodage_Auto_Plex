@@ -161,7 +161,7 @@ def filtrer_pistes_audio(info_pistes, preset, verbose=False):
         logger.warning(f"{horodatage()} 🚫 Aucune piste audio valide sélectionnée.")
         return None
 
-    logger.info(
+    logger.debug(
         f"Pistes sélectionnées pour le preset '{preset}' : {pistes_selectionnees}"
     )
     return pistes_selectionnees

@@ -482,10 +482,10 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
         queue_size = file_encodage.qsize()
 
         if queue_size > 0:
-            if debug_mode:
-                logger.info(
-                    f"Récupération de {queue_size} éléments dans la file d'attente"
-                )
+            logger.debug(
+                f"Récupération de {queue_size} éléments dans la file d'attente"
+            )
+
             # Créer une liste temporaire pour stocker les éléments
             temp_items = []
 
@@ -521,7 +521,10 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
             save_interrupted_encodings(current_encoding, queue_items)
 
         # Encodage avec gestion GUI
-        logger.info(f"Début de l'encodage de {fichier} avec le preset {preset}")
+
+        basename = os.path.basename(fichier)
+
+        logger.info(f"Début de l'encodage de {basename} avec le preset {preset}")
         result = lancer_encodage_avec_gui(
             fichier,
             preset,
