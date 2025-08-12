@@ -37,8 +37,10 @@ def surveille_dossiers(
     control_flags -- Les drapeaux de contrôle.
     """
     logger.info(
-        f"✅ Démarrage de la surveillance sur {len(dossiers_presets)} dossier(s)"
+        "✅ Démarrage de la surveillance sur %d dossier(s)",
+        len(dossiers_presets),
     )
+    logger.info("=" * 100)
 
     def safe_load_files(file_path):
         """Lecture sécurisée d'un fichier JSON."""
@@ -70,6 +72,8 @@ def surveille_dossiers(
         print(f"{horodatage()} 🔍 Surveillance initiale des dossiers terminée.")
 
         while True:
+            # Indique si au moins un nouveau fichier a été ajouté à la file durant ce cycle
+            nouveaux_detectes_dans_cycle = False
             for dossier, preset in dossiers_presets.items():
                 # Obtenir la liste actuelle des fichiers dans le dossier
                 fichiers_actuels = obtenir_fichiers(dossier)
@@ -111,6 +115,8 @@ def surveille_dossiers(
                                     "INFO",
                                     "skyblue",
                                 )
+                                # Marquer qu'on a détecté quelque chose dans ce cycle
+                                nouveaux_detectes_dans_cycle = True
 
                                 # Mettre à jour l'interface graphique
                                 if signals:
@@ -144,6 +150,10 @@ def surveille_dossiers(
 
                 # Mettre à jour la liste des fichiers initialement détectés pour le prochain cycle
                 fichiers_initiaux[dossier] = fichiers_actuels
+
+            # Afficher un séparateur uniquement si des nouveaux fichiers ont été détectés
+            if nouveaux_detectes_dans_cycle:
+                logger.info("=" * 100)
 
             # Sauvegarder l'état actuel des fichiers détectés et encodés
             safe_save_files(fichier_sauvegarde, fichiers_detectes)

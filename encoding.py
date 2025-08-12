@@ -279,6 +279,7 @@ def lancer_encodage_avec_gui(
                     except:
                         pass
                 logger.info(f"Saut de l'encodage demandé pour {short_fichier}")
+                logger.info("=" * 100)
                 process.terminate()
                 control_flags["skip"] = False
                 if signals:
@@ -384,6 +385,7 @@ def lancer_encodage_avec_gui(
                     "INFO",
                     "green",
                 )
+                logger.info("=" * 100)
                 # Enregistrer l'encodage réussi pour l'historique
                 record_successful_encoding(chemin_sortie, taille)
                 # Rafraîchir l'historique des encodages dans l'interface
@@ -395,6 +397,7 @@ def lancer_encodage_avec_gui(
                 logger.warning(f"Le fichier encodé n'a pas été trouvé: {chemin_sortie}")
                 # Envoyer une notification d'erreur d'encodage
                 notifier_erreur_encodage(short_fichier)
+                logger.info("=" * 100)
         else:
             logger.error(
                 f"Échec de l'encodage pour {nom_fichier} avec code de retour {process.returncode}"
@@ -440,6 +443,7 @@ def traitement_file_encodage(file_encodage, signals=None, control_flags=None):
         # Vérifier si on doit arrêter complètement
         if control_flags and control_flags.get("stop_all", False):
             colored_log(logger, "Arrêt de tous les encodages demandé", "INFO", "red")
+            logger.info("=" * 100)
             control_flags["stop_all"] = False
             # Envoyer un signal pour mettre à jour l'interface
             if signals:
