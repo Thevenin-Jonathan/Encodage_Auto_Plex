@@ -46,7 +46,15 @@ def noter_piste_audio(piste, langues_prioritaires):
     # Éviter les pistes malentendantes, descriptives, etc.
     if any(
         critere in enlever_accents(piste.get("Name", "").lower())
-        for critere in ["malentendant", "sdh", "descriptive", "audio description", "ad"]
+        for critere in [
+            "malentendant",
+            "sdh",
+            "descriptive",
+            "audio description",
+            "ad",
+            "audiodescription",
+            "description",
+        ]
     ):
         note -= 100
 
