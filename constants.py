@@ -22,7 +22,7 @@ dossiers_presets = {
     "D:/Torrents/Film Jeunes VF": "Films - Series VF",
     "D:/Torrents/Series VF": "Films - Series VF",
     "D:/Torrents/Series Jeunes VF": "Films - Series VF",
-    "D:/Torrents/Series Jeunes MULTI": "Films - Series VF",
+    "D:/Torrents/Series Jeunes MULTI": "Films - Series MULTI",
     "D:/Torrents/Film MULTI": "Films - Series MULTI",
     "D:/Torrents/Film Jeunes MULTI": "Films - Series MULTI",
     "D:/Torrents/Series MULTI": "Films - Series MULTI",
@@ -30,6 +30,19 @@ dossiers_presets = {
     "D:/Torrents/Mangas VO": "Mangas VO",
     "D:/Torrents/Film 4K": "4K - 10bits",
     "D:/Torrents/Serie 4K": "4K - 10bits",
+    "C:/Users/warzo/Downloads/medias_to_rip/Dessins animes VF": "Dessins animes VF",
+    "C:/Users/warzo/Downloads/medias_to_rip/Film VF": "Films - Series VF",
+    "C:/Users/warzo/Downloads/medias_to_rip/Film Jeunes VF": "Films - Series VF",
+    "C:/Users/warzo/Downloads/medias_to_rip/Series VF": "Films - Series VF",
+    "C:/Users/warzo/Downloads/medias_to_rip/Series Jeunes VF": "Films - Series VF",
+    "C:/Users/warzo/Downloads/medias_to_rip/Series Jeunes MULTI": "Films - Series MULTI",
+    "C:/Users/warzo/Downloads/medias_to_rip/Film MULTI": "Films - Series MULTI",
+    "C:/Users/warzo/Downloads/medias_to_rip/Film Jeunes MULTI": "Films - Series MULTI",
+    "C:/Users/warzo/Downloads/medias_to_rip/Series MULTI": "Films - Series MULTI",
+    "C:/Users/warzo/Downloads/medias_to_rip/Mangas MULTI": "Mangas MULTI",
+    "C:/Users/warzo/Downloads/medias_to_rip/Mangas VO": "Mangas VO",
+    "C:/Users/warzo/Downloads/medias_to_rip/Film 4K": "4K - 10bits",
+    "C:/Users/warzo/Downloads/medias_to_rip/Serie 4K": "4K - 10bits",
 }
 
 # Configuration des dossiers de sortie pour chaque dossier surveillé
@@ -48,6 +61,19 @@ dossiers_sortie_surveillance = {
     "D:/Torrents/Mangas VO": "D:/Ripped/seriesJeunes",
     "D:/Torrents/Film 4K": "D:/Ripped/films4K",
     "D:/Torrents/Serie 4K": "D:/Ripped/series4K",
+    "C:/Users/warzo/Downloads/medias_to_rip/Dessins animes VF": "D:/Ripped/seriesJeunes",
+    "C:/Users/warzo/Downloads/medias_to_rip/Film VF": "D:/Ripped/films",
+    "C:/Users/warzo/Downloads/medias_to_rip/Film Jeunes VF": "D:/Ripped/filmsJeunes",
+    "C:/Users/warzo/Downloads/medias_to_rip/Series VF": "D:/Ripped/series",
+    "C:/Users/warzo/Downloads/medias_to_rip/Film MULTI": "D:/Ripped/films",
+    "C:/Users/warzo/Downloads/medias_to_rip/Film Jeunes MULTI": "D:/Ripped/filmsJeunes",
+    "C:/Users/warzo/Downloads/medias_to_rip/Series MULTI": "D:/Ripped/series",
+    "C:/Users/warzo/Downloads/medias_to_rip/Mangas MULTI": "D:/Ripped/seriesJeunes",
+    "C:/Users/warzo/Downloads/medias_to_rip/Mangas VO": "D:/Ripped/seriesJeunes",
+    "C:/Users/warzo/Downloads/medias_to_rip/Film 4K": "D:/Ripped/films4K",
+    "C:/Users/warzo/Downloads/medias_to_rip/Serie 4K": "D:/Ripped/series4K",
+    "C:/Users/warzo/Downloads/medias_to_rip/Series Jeunes VF": "D:/Ripped/seriesJeunes",
+    "C:/Users/warzo/Downloads/medias_to_rip/Series Jeunes MULTI": "D:/Ripped/seriesJeunes",
 }
 
 # Chemin du dossier de sortie par défaut (pour compatibilité)
