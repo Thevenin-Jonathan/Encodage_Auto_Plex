@@ -33,6 +33,9 @@ from config import load_config
 
 class LogHandler(QObject, logging.Handler):
     log_signal = pyqtSignal(str, str, str)  # message, level, custom_color
+    error_warning_signal = pyqtSignal(
+        str, str, str
+    )  # message, level (ERROR/WARNING), timestamp
 
     def __init__(self):
         super().__init__()
@@ -47,6 +50,12 @@ class LogHandler(QObject, logging.Handler):
         # Vérifier si le message contient une indication de couleur personnalisée
         custom_color = getattr(record, "custom_color", None)
         self.log_signal.emit(msg, record.levelname, custom_color)
+
+        # Capturer les erreurs et avertissements
+        if record.levelno in (logging.ERROR, logging.CRITICAL, logging.WARNING):
+            timestamp = record.created
+            level = "ERROR" if record.levelno >= logging.ERROR else "WARNING"
+            self.error_warning_signal.emit(msg, level, str(timestamp))
 
 
 class EncodingStatusWidget(QFrame):
@@ -162,14 +171,12 @@ class EncodingsHistoryPanel(QWidget):
         )
         self.encodings_table.setAlternatingRowColors(True)
         # Définir les couleurs alternées pour les lignes du tableau
-        self.encodings_table.setStyleSheet(
-            """
+        self.encodings_table.setStyleSheet("""
             QTableView {
                 background-color: #19232d;
                 alternate-background-color: #243240;
             }
-        """
-        )
+        """)
         self.encodings_table.setEditTriggers(
             QTableWidget.NoEditTriggers
         )  # Lecture seule
@@ -272,6 +279,354 @@ class LogsPanel(QWidget):
         self.setMinimumWidth(400)
 
 
+class ErrorsAndWarningsPanel(QWidget):
+    """Widget pour afficher les erreurs et avertissements dans un panneau latéral"""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.parent_window = parent
+
+        # Layout principal
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        # En-tête avec titre et bouton de fermeture
+        header_layout = QHBoxLayout()
+
+        alert_label = QLabel("Erreurs & Avertissements:")
+        alert_label.setFont(QFont("Arial", 10, QFont.Bold))
+        header_layout.addWidget(alert_label)
+
+        # Compteur des alertes
+        self.alert_counter_label = QLabel("(0)")
+        self.alert_counter_label.setFont(QFont("Arial", 10, QFont.Bold))
+        header_layout.addWidget(self.alert_counter_label)
+
+        header_layout.addStretch()
+
+        self.close_button = QToolButton()
+        self.close_button.setText("×")
+        self.close_button.setToolTip("Masquer les erreurs et avertissements")
+        self.close_button.setStyleSheet("QToolButton { font-size: 16px; }")
+        header_layout.addWidget(self.close_button)
+
+        layout.addLayout(header_layout)
+
+        # Ligne de filtrage
+        filter_layout = QHBoxLayout()
+        filter_label = QLabel("Filtrer:")
+        filter_label.setFont(QFont("Arial", 9))
+        filter_layout.addWidget(filter_label)
+
+        self.filter_all_button = QPushButton("Tous")
+        self.filter_all_button.setCheckable(True)
+        self.filter_all_button.setChecked(True)
+        self.filter_all_button.setMaximumWidth(80)
+        self.filter_all_button.clicked.connect(lambda: self.set_filter("ALL"))
+        filter_layout.addWidget(self.filter_all_button)
+
+        self.filter_errors_button = QPushButton("Erreurs")
+        self.filter_errors_button.setCheckable(True)
+        self.filter_errors_button.setMaximumWidth(80)
+        self.filter_errors_button.setStyleSheet("background-color: #A94442;")
+        self.filter_errors_button.clicked.connect(lambda: self.set_filter("ERROR"))
+        filter_layout.addWidget(self.filter_errors_button)
+
+        self.filter_warnings_button = QPushButton("Avertissements")
+        self.filter_warnings_button.setCheckable(True)
+        self.filter_warnings_button.setMaximumWidth(100)
+        self.filter_warnings_button.setStyleSheet("background-color: #8B6F47;")
+        self.filter_warnings_button.clicked.connect(lambda: self.set_filter("WARNING"))
+        filter_layout.addWidget(self.filter_warnings_button)
+
+        filter_layout.addStretch()
+        layout.addLayout(filter_layout)
+
+        # Tableau pour les erreurs et avertissements
+        self.alerts_table = QTableWidget()
+        self.alerts_table.setColumnCount(4)
+        self.alerts_table.setHorizontalHeaderLabels(
+            ["Type", "Heure", "Message", "Action"]
+        )
+        self.alerts_table.horizontalHeader().setSectionResizeMode(
+            0, QHeaderView.ResizeToContents
+        )
+        self.alerts_table.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.ResizeToContents
+        )
+        self.alerts_table.horizontalHeader().setSectionResizeMode(
+            2, QHeaderView.Stretch
+        )
+        self.alerts_table.horizontalHeader().setSectionResizeMode(
+            3, QHeaderView.ResizeToContents
+        )
+        self.alerts_table.setAlternatingRowColors(True)
+        self.alerts_table.setStyleSheet("""
+            QTableView {
+                background-color: #19232d;
+                alternate-background-color: #243240;
+            }
+            QHeaderView::section {
+                background-color: #2d2d30;
+                color: white;
+                padding: 5px;
+            }
+        """)
+        self.alerts_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.alerts_table.setSortingEnabled(True)
+        layout.addWidget(self.alerts_table)
+
+        # Boutons d'action
+        buttons_layout = QHBoxLayout()
+
+        self.clear_alerts_button = QPushButton("Effacer tout")
+        self.clear_alerts_button.setToolTip("Efface tous les erreurs et avertissements")
+        self.clear_alerts_button.setStyleSheet("background-color: #A94442;")
+        self.clear_alerts_button.clicked.connect(self.clear_alerts)
+        buttons_layout.addWidget(self.clear_alerts_button)
+
+        buttons_layout.addStretch()
+        layout.addLayout(buttons_layout)
+
+        # Définir une largeur minimale pour le panneau
+        self.setMinimumWidth(550)
+
+        # Stockage des alertes
+        self.alerts_count = 0
+        self.all_alerts = (
+            []
+        )  # Garder un historique de toutes les alertes pour le filtrage
+
+        # Initialiser la couleur du compteur
+        self.update_counter()
+
+        # État du filtre
+        self.current_filter = "ALL"
+
+    def add_alert(self, message, alert_type, timestamp):
+        """Ajoute une nouvelle alerte au tableau"""
+        from datetime import datetime
+
+        # Convertir le timestamp en heure lisible
+        dt = datetime.fromtimestamp(float(timestamp))
+        time_str = dt.strftime("%H:%M:%S")
+
+        # Stocker l'alerte complète dans l'historique
+        alert_data = {
+            "message": message,
+            "type": alert_type,
+            "timestamp": timestamp,
+            "time_str": time_str,
+        }
+        self.all_alerts.append(alert_data)
+
+        # Ajouter une ligne au tableau
+        row = self.alerts_table.rowCount()
+        self.alerts_table.insertRow(row)
+
+        # Type (ERROR/WARNING)
+        type_item = QTableWidgetItem(alert_type)
+        type_item.setTextAlignment(Qt.AlignCenter)
+        if alert_type == "ERROR":
+            type_item.setBackground(Qt.red)
+            type_item.setForeground(Qt.white)
+        else:  # WARNING
+            type_item.setBackground(Qt.darkYellow)
+            type_item.setForeground(Qt.white)
+        self.alerts_table.setItem(row, 0, type_item)
+
+        # Heure
+        time_item = QTableWidgetItem(time_str)
+        time_item.setTextAlignment(Qt.AlignCenter)
+        self.alerts_table.setItem(row, 1, time_item)
+
+        # Message
+        msg_item = QTableWidgetItem(message)
+        msg_item.setToolTip(message)  # Afficher le message complet en survol
+        self.alerts_table.setItem(row, 2, msg_item)
+
+        # Bouton Action (voir dans les logs)
+        action_button = QPushButton("Voir logs")
+        action_button.setMaximumWidth(80)
+        action_button.setToolTip("Afficher cette alerte dans le panneau des logs")
+        action_button.clicked.connect(
+            lambda checked=False, msg=message: self.show_in_logs(msg)
+        )
+        self.alerts_table.setCellWidget(row, 3, action_button)
+
+        # Incrémenter le compteur
+        self.alerts_count += 1
+        self.update_counter()
+
+        # Appliquer le filtre courant
+        self.apply_filter()
+
+        # Scroller vers le bas
+        self.alerts_table.scrollToBottom()
+
+    def show_in_logs(self, message):
+        """Affiche l'alerte dans le panneau des logs"""
+        if not self.parent_window:
+            return
+
+        # Afficher le panneau des logs s'il ne l'est pas
+        if not self.parent_window.logs_panel_visible:
+            self.parent_window.show_logs_panel()
+
+        # Chercher et scroller jusqu'à ce message dans les logs
+        log_text_widget = self.parent_window.logs_panel.log_text
+
+        # Essayer de chercher le message complet d'abord
+        search_text = message.strip()
+
+        # Si le message est très long, prendre les 60 premiers caractères
+        if len(search_text) > 100:
+            search_text = search_text[:100]
+
+        # Chercher le texte en utilisant QTextDocument.find
+        doc = log_text_widget.document()
+
+        # Commencer la recherche depuis le début
+        cursor = log_text_widget.textCursor()
+        cursor.movePosition(cursor.MoveOperation.Start)
+
+        # Chercher le texte
+        found_cursor = doc.find(search_text, cursor)
+
+        if not found_cursor.isNull():
+            # Texte trouvé, placer le curseur dessus et l'afficher
+            log_text_widget.setTextCursor(found_cursor)
+            log_text_widget.ensureCursorVisible()
+        else:
+            # Si le texte exact n'est pas trouvé, essayer avec les 3 premiers mots
+            words = search_text.split()
+            if len(words) > 3:
+                search_text = " ".join(words[:3])
+                found_cursor = doc.find(search_text, cursor)
+                if not found_cursor.isNull():
+                    log_text_widget.setTextCursor(found_cursor)
+                    log_text_widget.ensureCursorVisible()
+                else:
+                    # Dernier recours : scroller vers la fin
+                    cursor.movePosition(cursor.MoveOperation.End)
+                    log_text_widget.setTextCursor(cursor)
+                    log_text_widget.ensureCursorVisible()
+            else:
+                # Scroller vers la fin si pas trouvé
+                cursor.movePosition(cursor.MoveOperation.End)
+                log_text_widget.setTextCursor(cursor)
+                log_text_widget.ensureCursorVisible()
+
+    def set_filter(self, filter_type):
+        """Définit le filtre actif"""
+        self.current_filter = filter_type
+
+        # Mettre à jour les boutons
+        self.filter_all_button.setChecked(filter_type == "ALL")
+        self.filter_errors_button.setChecked(filter_type == "ERROR")
+        self.filter_warnings_button.setChecked(filter_type == "WARNING")
+
+        # Appliquer le filtre
+        self.refresh_table_with_filter()
+
+    def apply_filter(self):
+        """Applique le filtre sélectionné au tableau"""
+        # Déterminer le filtre sélectionné
+        if self.filter_all_button.isChecked():
+            self.current_filter = "ALL"
+            self.filter_errors_button.setChecked(False)
+            self.filter_warnings_button.setChecked(False)
+        elif self.filter_errors_button.isChecked():
+            self.current_filter = "ERROR"
+            self.filter_all_button.setChecked(False)
+            self.filter_warnings_button.setChecked(False)
+        elif self.filter_warnings_button.isChecked():
+            self.current_filter = "WARNING"
+            self.filter_all_button.setChecked(False)
+            self.filter_errors_button.setChecked(False)
+        else:
+            # Si rien n'est sélectionné, afficher tous
+            self.current_filter = "ALL"
+            self.filter_all_button.setChecked(True)
+
+        # Reconstruire le tableau avec le filtre
+        self.refresh_table_with_filter()
+
+    def clear_alerts(self):
+        """Efface tous les alertes"""
+        self.alerts_table.setRowCount(0)
+        self.all_alerts.clear()
+        self.alerts_count = 0
+        self.update_counter()
+
+    def refresh_table_with_filter(self):
+        """Rafraîchit le tableau en appliquant le filtre courant"""
+        # Désactiver le tri temporairement
+        self.alerts_table.setSortingEnabled(False)
+
+        # Vider le tableau
+        self.alerts_table.setRowCount(0)
+
+        # Ajouter seulement les alertes qui correspondent au filtre
+        for alert_data in self.all_alerts:
+            alert_type = alert_data["type"]
+
+            # Vérifier si l'alerte correspond au filtre
+            if self.current_filter == "ALL" or alert_type == self.current_filter:
+                row = self.alerts_table.rowCount()
+                self.alerts_table.insertRow(row)
+
+                # Type (ERROR/WARNING)
+                type_item = QTableWidgetItem(alert_type)
+                type_item.setTextAlignment(Qt.AlignCenter)
+                if alert_type == "ERROR":
+                    type_item.setBackground(Qt.red)
+                    type_item.setForeground(Qt.white)
+                else:  # WARNING
+                    type_item.setBackground(Qt.darkYellow)
+                    type_item.setForeground(Qt.white)
+                self.alerts_table.setItem(row, 0, type_item)
+
+                # Heure
+                time_item = QTableWidgetItem(alert_data["time_str"])
+                time_item.setTextAlignment(Qt.AlignCenter)
+                self.alerts_table.setItem(row, 1, time_item)
+
+                # Message
+                msg_item = QTableWidgetItem(alert_data["message"])
+                msg_item.setToolTip(alert_data["message"])
+                self.alerts_table.setItem(row, 2, msg_item)
+
+                # Bouton Action
+                action_button = QPushButton("Voir logs")
+                action_button.setMaximumWidth(80)
+                action_button.setToolTip(
+                    "Afficher cette alerte dans le panneau des logs"
+                )
+                # Créer le bouton avec la bonne fonction
+                message = alert_data["message"]
+                action_button.clicked.connect(
+                    lambda checked=False, msg=message: self.show_in_logs(msg)
+                )
+                self.alerts_table.setCellWidget(row, 3, action_button)
+
+        # Réactiver le tri
+        self.alerts_table.setSortingEnabled(True)
+        self.alerts_table.scrollToBottom()
+
+    def update_counter(self):
+        """Met à jour le compteur affichant le nombre d'alertes"""
+        self.alert_counter_label.setText(f"({self.alerts_count})")
+
+        # Changer la couleur du compteur selon le nombre d'alertes
+        if self.alerts_count == 0:
+            self.alert_counter_label.setStyleSheet("color: gray;")
+        elif self.alerts_count > 10:
+            self.alert_counter_label.setStyleSheet("color: darkred; font-weight: bold;")
+        else:
+            self.alert_counter_label.setStyleSheet("color: orange; font-weight: bold;")
+
+
 class OutputDirectoriesDialog(QWidget):
     """Dialogue pour configurer les dossiers de sortie pour chaque preset"""
 
@@ -348,8 +703,7 @@ class OutputDirectoriesDialog(QWidget):
         button_layout.addWidget(self.cancel_button)
 
         self.save_button = QPushButton("Sauvegarder")
-        self.save_button.setStyleSheet(
-            """
+        self.save_button.setStyleSheet("""
             QPushButton {
                 background-color: #0078d4;
                 color: white;
@@ -361,8 +715,7 @@ class OutputDirectoriesDialog(QWidget):
             QPushButton:hover {
                 background-color: #106ebe;
             }
-        """
-        )
+        """)
         self.save_button.clicked.connect(self.save_directories)
         button_layout.addWidget(self.save_button)
 
@@ -495,15 +848,13 @@ class MainWindow(QMainWindow):
         self.show_history_button.clicked.connect(self.toggle_history_panel)
 
         # Forcer la taille via une feuille de style CSS
-        self.show_history_button.setStyleSheet(
-            """
+        self.show_history_button.setStyleSheet("""
             QPushButton {
                 min-height: 40px;
                 min-width: 140px;
                 font-weight: bold;
             }
-        """
-        )
+        """)
 
         left_buttons_layout.addWidget(self.show_history_button)
 
@@ -529,14 +880,12 @@ class MainWindow(QMainWindow):
         notifications_layout.addWidget(self.config_dirs_button)
 
         # Forcer la taille via une feuille de style CSS
-        self.config_dirs_button.setStyleSheet(
-            """
+        self.config_dirs_button.setStyleSheet("""
             QPushButton {
                 min-height: 40px;
                 min-width: 140px;
             }
-        """
-        )
+        """)
 
         # Checkbox pour activer/désactiver les notifications Windows
         self.notifications_checkbox = QCheckBox("Notifications Windows")
@@ -555,6 +904,19 @@ class MainWindow(QMainWindow):
         # Layout vertical pour les boutons de logs
         logs_buttons_layout = QVBoxLayout()
         logs_buttons_layout.setSpacing(5)  # Espacement entre les boutons
+
+        # Bouton pour afficher/masquer les erreurs et avertissements
+        self.show_alerts_button = QPushButton("Erreurs &\nAvertissements")
+        self.show_alerts_button.setToolTip(
+            "Afficher/masquer les erreurs et avertissements"
+        )
+        self.show_alerts_button.clicked.connect(self.toggle_alerts_panel)
+        self.show_alerts_button.setMinimumHeight(75)
+        self.show_alerts_button.setMinimumWidth(120)
+        self.show_alerts_button.setStyleSheet(
+            "background-color: #8B0000; color: white;"
+        )
+        logs_buttons_layout.addWidget(self.show_alerts_button)
 
         # Bouton pour afficher/masquer les logs (à droite)
         self.show_logs_button = QPushButton("Afficher\nles logs")
@@ -729,16 +1091,24 @@ class MainWindow(QMainWindow):
         self.logs_panel = LogsPanel()
         self.logs_panel.close_button.clicked.connect(self.hide_logs_panel)
 
+        # Créer le panneau des erreurs et avertissements
+        self.alerts_panel = ErrorsAndWarningsPanel(parent=self)
+        self.alerts_panel.close_button.clicked.connect(self.hide_alerts_panel)
+
         # Ajouter les panneaux au splitter (initialement cachés)
         self.splitter.insertWidget(0, self.history_panel)  # Ajouter à gauche
+        self.splitter.insertWidget(1, self.alerts_panel)  # Ajouter au milieu
         self.splitter.addWidget(self.logs_panel)  # Ajouter à droite
 
         # Définir les tailles initiales des widgets dans le splitter
-        self.splitter.setSizes([0, 1, 0])  # Les deux panneaux sont initialement masqués
+        self.splitter.setSizes(
+            [0, 0, 1, 0]
+        )  # Les trois panneaux sont initialement masqués
 
         # Stocker l'état des panneaux
         self.history_panel_visible = False
         self.logs_panel_visible = False
+        self.alerts_panel_visible = False
 
         # Index du dernier fichier de log chargé
         self.current_log_index = -1
@@ -810,16 +1180,35 @@ class MainWindow(QMainWindow):
         """Affiche le panneau de logs"""
         # Calculer les nouvelles tailles pour le splitter
         total_width = self.splitter.width()
-        if self.history_panel_visible:
-            # Si le panneau d'historique est visible, ajuster les tailles
+        current_sizes = self.splitter.sizes()
+
+        if self.history_panel_visible and self.alerts_panel_visible:
+            # Tous les autres panneaux visibles
             new_sizes = [
                 int(total_width * 0.25),
-                int(total_width * 0.5),
+                int(total_width * 0.25),
+                int(total_width * 0.25),
                 int(total_width * 0.25),
             ]
+        elif self.history_panel_visible:
+            # Historique + logs
+            new_sizes = [
+                int(total_width * 0.3),
+                0,
+                int(total_width * 0.4),
+                int(total_width * 0.3),
+            ]
+        elif self.alerts_panel_visible:
+            # Alertes + logs
+            new_sizes = [
+                0,
+                int(total_width * 0.4),
+                int(total_width * 0.3),
+                int(total_width * 0.3),
+            ]
         else:
-            # Sinon, juste afficher le panneau de logs à droite
-            new_sizes = [0, int(total_width * 0.7), int(total_width * 0.3)]
+            # Juste logs
+            new_sizes = [0, 0, int(total_width * 0.7), int(total_width * 0.3)]
 
         self.splitter.setSizes(new_sizes)
         self.logs_panel_visible = True
@@ -843,16 +1232,35 @@ class MainWindow(QMainWindow):
 
         # Calculer les nouvelles tailles pour le splitter
         total_width = self.splitter.width()
-        if self.logs_panel_visible:
-            # Si le panneau de logs est visible, ajuster les tailles
+        current_sizes = self.splitter.sizes()
+
+        if self.alerts_panel_visible and self.logs_panel_visible:
+            # Tous les autres panneaux visibles
             new_sizes = [
                 int(total_width * 0.25),
-                int(total_width * 0.5),
+                int(total_width * 0.25),
+                int(total_width * 0.25),
                 int(total_width * 0.25),
             ]
+        elif self.alerts_panel_visible:
+            # Historique + alertes
+            new_sizes = [
+                int(total_width * 0.3),
+                int(total_width * 0.4),
+                int(total_width * 0.3),
+                0,
+            ]
+        elif self.logs_panel_visible:
+            # Historique + logs
+            new_sizes = [
+                int(total_width * 0.3),
+                0,
+                int(total_width * 0.4),
+                int(total_width * 0.3),
+            ]
         else:
-            # Sinon, juste afficher le panneau d'historique à gauche
-            new_sizes = [int(total_width * 0.3), int(total_width * 0.7), 0]
+            # Juste historique
+            new_sizes = [int(total_width * 0.3), 0, int(total_width * 0.7), 0]
 
         self.splitter.setSizes(new_sizes)
         self.history_panel_visible = True
@@ -861,14 +1269,21 @@ class MainWindow(QMainWindow):
     def hide_history_panel(self):
         """Masque le panneau d'historique des encodages"""
         current_sizes = self.splitter.sizes()
-        if self.logs_panel_visible:
-            # Si le panneau de logs est visible, ajuster pour ne garder que le contenu principal et les logs
+
+        if self.alerts_panel_visible and self.logs_panel_visible:
+            # Garder alertes et logs
             self.splitter.setSizes(
-                [0, current_sizes[1] + current_sizes[0], current_sizes[2]]
+                [0, current_sizes[1], current_sizes[2], current_sizes[3]]
             )
+        elif self.alerts_panel_visible:
+            # Garder alertes
+            self.splitter.setSizes([0, current_sizes[1], current_sizes[2], 0])
+        elif self.logs_panel_visible:
+            # Garder logs
+            self.splitter.setSizes([0, 0, current_sizes[2], current_sizes[3]])
         else:
-            # Sinon, tout donner au contenu principal
-            self.splitter.setSizes([0, sum(current_sizes), 0])
+            # Tout au contenu principal
+            self.splitter.setSizes([0, sum(current_sizes), 0, 0])
 
         self.history_panel_visible = False
         self.show_history_button.setText("Historique\ndes encodages")
@@ -883,11 +1298,11 @@ class MainWindow(QMainWindow):
         if self.history_panel_visible:
             # Si le panneau d'historique est visible, ajuster pour ne garder que le contenu principal et l'historique
             self.splitter.setSizes(
-                [current_sizes[0], current_sizes[1] + current_sizes[2], 0]
+                [current_sizes[0], current_sizes[2] + current_sizes[3], 0]
             )
         else:
             # Sinon, tout donner au contenu principal
-            self.splitter.setSizes([0, sum(current_sizes), 0])
+            self.splitter.setSizes([0, sum(current_sizes) - current_sizes[1], 0])
 
         self.logs_panel_visible = False
         self.show_logs_button.setText("Afficher logs")
@@ -897,6 +1312,75 @@ class MainWindow(QMainWindow):
             self.current_log_index = -1
             self.load_old_logs_button.setVisible(True)
             self.load_old_logs_button.setText("Charger les\nanciens logs")
+
+    def toggle_alerts_panel(self):
+        """Affiche ou masque le panneau des erreurs et avertissements"""
+        if self.alerts_panel_visible:
+            self.hide_alerts_panel()
+        else:
+            self.show_alerts_panel()
+
+    def show_alerts_panel(self):
+        """Affiche le panneau des erreurs et avertissements"""
+        # Calculer les nouvelles tailles pour le splitter
+        total_width = self.splitter.width()
+        current_sizes = self.splitter.sizes()
+
+        if self.history_panel_visible and self.logs_panel_visible:
+            # Tous les panneaux visibles
+            new_sizes = [
+                int(total_width * 0.25),
+                int(total_width * 0.25),
+                int(total_width * 0.25),
+                int(total_width * 0.25),
+            ]
+        elif self.history_panel_visible:
+            # Historique + alertes
+            new_sizes = [
+                int(total_width * 0.3),
+                int(total_width * 0.4),
+                int(total_width * 0.3),
+                0,
+            ]
+        elif self.logs_panel_visible:
+            # Alertes + logs
+            new_sizes = [
+                0,
+                int(total_width * 0.4),
+                int(total_width * 0.3),
+                int(total_width * 0.3),
+            ]
+        else:
+            # Juste alertes
+            new_sizes = [0, int(total_width * 0.6), int(total_width * 0.4), 0]
+
+        self.splitter.setSizes(new_sizes)
+        self.alerts_panel_visible = True
+        self.show_alerts_button.setText("Masquer\nalertes")
+
+    def hide_alerts_panel(self):
+        """Masque le panneau des erreurs et avertissements"""
+        current_sizes = self.splitter.sizes()
+
+        if self.history_panel_visible and self.logs_panel_visible:
+            # Garder historique et logs
+            self.splitter.setSizes(
+                [current_sizes[0], 0, current_sizes[2], current_sizes[3]]
+            )
+        elif self.history_panel_visible:
+            # Garder historique
+            self.splitter.setSizes(
+                [current_sizes[0], 0, current_sizes[2] + current_sizes[1], 0]
+            )
+        elif self.logs_panel_visible:
+            # Garder logs
+            self.splitter.setSizes([0, 0, current_sizes[2], current_sizes[3]])
+        else:
+            # Tout au contenu principal
+            self.splitter.setSizes([0, sum(current_sizes), 0, 0])
+
+        self.alerts_panel_visible = False
+        self.show_alerts_button.setText("Erreurs &\nAvertissements")
 
     def add_log(self, message, level="INFO", custom_color=None):
         """Ajoute un message dans la zone de logs avec coloration selon le niveau ou personnalisée"""
@@ -929,6 +1413,15 @@ class MainWindow(QMainWindow):
             # Auto-scroll to bottom
             sb = self.logs_panel.log_text.verticalScrollBar()
             sb.setValue(sb.maximum())
+
+    def add_alert(self, message, alert_type, timestamp):
+        """Ajoute une alerte au panneau des erreurs et avertissements"""
+        if hasattr(self, "alerts_panel"):
+            self.alerts_panel.add_alert(message, alert_type, timestamp)
+
+            # Afficher automatiquement le panneau si une erreur arrive
+            if alert_type == "ERROR" and not self.alerts_panel_visible:
+                self.show_alerts_panel()
 
     def update_queue(self, queue_files):
         """Met à jour la liste des encodages en attente"""

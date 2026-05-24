@@ -90,6 +90,7 @@ def main():
     # Configuration du gestionnaire de logs pour l'interface graphique
     log_handler = LogHandler()
     log_handler.log_signal.connect(window.add_log)
+    log_handler.error_warning_signal.connect(window.add_alert)
 
     # Ajouter le handler au logger racine pour capturer tous les logs
     root_logger = logging.getLogger()
