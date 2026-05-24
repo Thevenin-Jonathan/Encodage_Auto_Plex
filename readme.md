@@ -125,21 +125,6 @@ La configuration est stockée dans le fichier `datas/config.json` :
 Si aucune configuration spécifique n'est définie, les valeurs par défaut dans `constants.py` sont utilisées :
 
 ```python
-# Configuration des dossiers de sortie pour chaque dossier surveillé
-dossiers_sortie_surveillance = {
-    "D:/Torrents/Dessins animes VF": "D:/Ripped/Dessins animes VF",
-    "D:/Torrents/Film VF": "D:/Ripped/Film VF",
-    "D:/Torrents/Film Jeunes VF": "D:/Ripped/Film Jeunes VF",
-    "D:/Torrents/Series VF": "D:/Ripped/Series VF",
-    "D:/Torrents/Film MULTI": "D:/Ripped/Film MULTI",
-    "D:/Torrents/Film Jeunes MULTI": "D:/Ripped/Film Jeunes MULTI",
-    "D:/Torrents/Series MULTI": "D:/Ripped/Series MULTI",
-    "D:/Torrents/Mangas MULTI": "D:/Ripped/Mangas MULTI",
-    "D:/Torrents/Mangas VO": "D:/Ripped/Mangas VO",
-    "D:/Torrents/Film 4K": "D:/Ripped/Film 4K",
-    "D:/Torrents/Serie 4K": "D:/Ripped/Serie 4K",
-}
-
 # Dossier de sortie par défaut (pour compatibilité)
 dossier_sortie = "D:/Ripped"
 ```
