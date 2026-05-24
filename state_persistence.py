@@ -1,6 +1,4 @@
-import os
-import json
-import logging
+import os, json, logging, tempfile
 from datetime import datetime
 from constants import state_file
 
@@ -26,49 +24,35 @@ def save_interrupted_encodings(current_encoding=None, encoding_queue=None):
         bool: True si la sauvegarde a réussi, False sinon.
     """
     try:
-        # Vérifier si le chemin du fichier en cours est un chemin absolu
-        if current_encoding and "file" in current_encoding:
-            fichier = current_encoding["file"]
-            if fichier and not os.path.isabs(fichier):
-                logger.warning(
-                    f"Le chemin du fichier en cours n'est pas absolu: {fichier}"
-                )
-                # On ne modifie pas le chemin ici, on le laisse tel quel
-                # Le code dans main.py se chargera de trouver le chemin complet lors du chargement
-
-        # Vérifier si les chemins des fichiers dans la file d'attente sont des chemins absolus
-        if encoding_queue:
-            for item in encoding_queue:
-                if "file" in item:
-                    fichier = item["file"]
-                    if fichier and not os.path.isabs(fichier):
-                        logger.warning(
-                            f"Le chemin d'un fichier dans la file d'attente n'est pas absolu: {fichier}"
-                        )
-                        # On ne modifie pas le chemin ici, on le laisse tel quel
-                        # Le code dans main.py se chargera de trouver le chemin complet lors du chargement
-
-        # Préparer les données à sauvegarder
-        # Charger l'état existant s'il y en a un
+        # Charger l'état existant si possible
+        state = {}
         if os.path.exists(STATE_FILE):
-            with open(STATE_FILE, "r", encoding="utf-8") as f:
-                state = json.load(f)
-        else:
-            state = {}
-        old_current_encoding = state.get("current_encoding", None)
+            try:
+                with open(STATE_FILE, "r", encoding="utf-8") as f:
+                    state = json.load(f)
+            except Exception:
+                # JSON corrompu → on repart propre
+                state = {}
+
+        old_current_encoding = state.get("current_encoding")
 
         state = {
             "timestamp": datetime.now().isoformat(),
             "current_encoding": (
-                current_encoding
-                if current_encoding is not None
-                else old_current_encoding
+                current_encoding if current_encoding else old_current_encoding
             ),
             "encoding_queue": encoding_queue if encoding_queue else [],
         }
-        # Sauvegarder dans un fichier JSON
-        with open(STATE_FILE, "w", encoding="utf-8") as f:
-            json.dump(state, f, ensure_ascii=False, indent=2)
+
+        # Écriture atomique
+        dir_name = os.path.dirname(STATE_FILE)
+        with tempfile.NamedTemporaryFile(
+            "w", dir=dir_name, delete=False, encoding="utf-8"
+        ) as tmp:
+            json.dump(state, tmp, ensure_ascii=False, indent=2)
+            temp_name = tmp.name
+
+        os.replace(temp_name, STATE_FILE)
 
         logger.info(f"Encodages interrompus sauvegardés dans {STATE_FILE}")
         return True
@@ -77,7 +61,7 @@ def save_interrupted_encodings(current_encoding=None, encoding_queue=None):
         logger.error(
             f"Erreur lors de la sauvegarde des encodages interrompus: {str(e)}"
         )
-        return False
+        return
 
 
 def load_interrupted_encodings():
