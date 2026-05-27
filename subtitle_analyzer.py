@@ -722,7 +722,7 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
                 resume += "Pistes non verbales ignorées pour les encodages VO.\n\n"
             else:
                 resume += "Aucun sous-titre non verbal français identifié.\n\n"
-                logger.warning(f"Aucun sous-titre forcé identifié pour : {fichier_mkv}")
+                logger.debug(f"Aucun sous-titre forcé identifié pour : {fichier_mkv}")
 
             # Inclure les recommandations de pistes
             resume += "Recommandations pour l'extraction:\n"
