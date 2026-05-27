@@ -91,7 +91,7 @@ def filtrer_pistes_audio(info_pistes, preset, verbose=False):
     logger.debug(f"Nombre total de pistes audio détectées : {len(audio_tracks)}")
 
     # Si une seule piste audio est présente et que le preset n'est pas MULTI
-    if len(audio_tracks) == 1 and not "MULTI" in preset:
+    if len(audio_tracks) == 1 and "MULTI" not in preset and "VO" not in preset:
         piste_unique = audio_tracks[0]
         if piste_unique.get("LanguageCode", "").lower() != "fra":
             logger.warning(
