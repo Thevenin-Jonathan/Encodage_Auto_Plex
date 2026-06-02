@@ -125,6 +125,7 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
             or "media" not in info
             or "track" not in info["media"]
         ):
+            logger.warning("🚫 Format de données de sous titre non reconnu")
             return None, None, {"erreur": "Format de données non reconnu"}
 
         # Extraire les pistes de sous-titres français et similaires
@@ -676,7 +677,7 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
                     resume += "\n"
             else:
                 resume += "Aucun sous-titre verbal français identifié.\n\n"
-                logger.warning(
+                logger.debug(
                     f"Aucun sous-titre verbal français identifié pour : {fichier_mkv}"
                 )
 
