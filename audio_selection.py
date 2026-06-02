@@ -79,12 +79,12 @@ def filtrer_pistes_audio(info_pistes, preset, verbose=False):
     """
     if "TitleList" not in info_pistes or not info_pistes["TitleList"]:
         logger.warning(
-            "Aucune liste de titres trouvée dans les informations des pistes"
+            "🚫 Aucune liste de titres trouvée dans les informations des pistes"
         )
         return None
 
     if "AudioList" not in info_pistes["TitleList"][0]:
-        logger.warning("Aucune liste de pistes audio trouvée")
+        logger.warning("🚫 Aucune liste de pistes audio trouvée")
         return None
 
     audio_tracks = info_pistes["TitleList"][0]["AudioList"]
@@ -95,7 +95,7 @@ def filtrer_pistes_audio(info_pistes, preset, verbose=False):
         piste_unique = audio_tracks[0]
         if piste_unique.get("LanguageCode", "").lower() != "fra":
             logger.warning(
-                f"{horodatage()} 🚫 La seule piste audio n'est pas en français : "
+                f"⚠️ La seule piste audio n'est pas en français : "
                 f"{piste_unique.get('LanguageCode', 'inconnu')}"
             )
         return [piste_unique.get("TrackNumber")]
@@ -143,7 +143,7 @@ def filtrer_pistes_audio(info_pistes, preset, verbose=False):
         # Vérifier si le nombre de pistes sélectionnées est inférieur à deux
         if len(pistes_selectionnees) < 2:
             logger.warning(
-                f"{horodatage()} 🚫 Moins de deux pistes valides trouvées pour le preset MULTI."
+                f"🚫 Moins de deux pistes valides trouvées pour le preset MULTI."
             )
             return None
 
@@ -156,7 +156,7 @@ def filtrer_pistes_audio(info_pistes, preset, verbose=False):
         # Vérifier si plus d'une piste valide est sélectionnée
         if len(pistes_valides) > 1:
             logger.warning(
-                f"{horodatage()} 🚫 Trop de pistes valides trouvées pour le preset VO."
+                f"🚫 Trop de pistes valides trouvées pour le preset VO."
             )
             return None
 
@@ -166,7 +166,7 @@ def filtrer_pistes_audio(info_pistes, preset, verbose=False):
 
     # Si aucune piste valide n'est trouvée, retourner None
     if not pistes_selectionnees:
-        logger.warning(f"{horodatage()} 🚫 Aucune piste audio valide sélectionnée.")
+        logger.warning(f"🚫 Aucune piste audio valide sélectionnée.")
         return None
 
     logger.debug(
