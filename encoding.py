@@ -137,9 +137,6 @@ def lancer_encodage_avec_gui(
         audio_tracks = filtrer_pistes_audio(info_pistes, preset)
         if audio_tracks is None:
             reason = "audio"
-            logger.warning(
-                f"Pas de piste audio française disponibles pour {nom_fichier}"
-            )
             # Ajouter à la liste des encodages manuels avec le preset
             ajouter_fichier_a_liste_encodage_manuel(
                 fichier, nom_fichier, reason, preset, signals
