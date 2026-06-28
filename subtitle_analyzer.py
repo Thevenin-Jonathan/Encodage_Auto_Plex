@@ -220,6 +220,7 @@ def analyser_sous_titres_francais(fichier_mkv, preset, verbose=False):
             "hearing",
             "impaired",
             "deaf",
+            "cc",
         ]
 
         for track in info["media"].get("track", []):
